@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER CLOCK</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header-card" x-data="headerCard">
+            <h1>CYBER CLOCK</h1>
+            <p>Htmx Time Tracking</p>
+        </div>
+        
+        <!-- Features section for logged-out users -->
+        <div id="features" 
+             x-data="featureCard"
+             hx-get="/cards/feature-cards" 
+             hx-trigger="load">
+            <!-- Feature cards will load here -->
+        </div>
+
+        <!-- Login section -->
+        <div id="content" 
+             x-data="loginCard"
+             hx-get="/cards/login" 
+             hx-trigger="load">
+            <!-- Login card will load here -->
+        </div>
+    </div>
+
+    <!-- Import our functions -->
+    <script type="module">
+        import { loginCard } from '/functions/login-card.ts';
+        import { headerCard } from '/functions/header-card.ts';
+        import { featureCard } from '/functions/feature-card.ts';
+
+        // Make functions available to Alpine
+        window.loginCard = loginCard;
+        window.headerCard = headerCard;
+        window.featureCard = featureCard;
+    </script>
+</body>
+</html> 

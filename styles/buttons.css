@@ -1,0 +1,36 @@
+.btn {
+  background: linear-gradient(45deg, #00ff9d, #00b8ff);
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  color: #000;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 255, 157, 0.4);
+  background: linear-gradient(45deg, #00ff9d, #00d4ff);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Feature card specific button styles */
+.feature-card .btn {
+  background: linear-gradient(45deg, #00ff9d, #00b8ff);
+  color: #000;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.feature-card .btn:hover {
+  opacity: 1;
+  background: linear-gradient(45deg, #00ff9d, #00d4ff);
+}

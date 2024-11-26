@@ -1,0 +1,21 @@
+.header-card {
+  background: rgba(17, 25, 40, 0.95);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  padding: 2rem;
+  margin: 0 auto 2rem auto;
+  max-width: 60%;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  text-align: center;
+}
+
+.header-card h1 {
+  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+}
+
+.header-card p {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+}

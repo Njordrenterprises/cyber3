@@ -1,0 +1,23 @@
+@import 'header.css';
+@import 'main-container.css';
+@import 'cards.css';
+@import 'buttons.css';
+
+:root {
+  --bg-color: #0f172a;
+  --text-color: #e2e8f0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  line-height: 1.5;
+}
