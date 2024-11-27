@@ -1,10 +1,17 @@
+export interface TimeEntry {
+  startTime: string;
+  endTime?: string;
+  projectId: string;
+  description: string;
+}
+
 export function timeTracker() {
   return {
     isTracking: false,
     isLoading: false,
-    startTime: null,
+    startTime: null as Date | null,
     elapsedTime: 0,
-    timerInterval: null,
+    timerInterval: null as number | null,
     message: '',
 
     init() {
@@ -16,7 +23,7 @@ export function timeTracker() {
       try {
         const response = await fetch('/time/active');
         if (response.ok) {
-          const timeEntry = await response.json();
+          const timeEntry = await response.json() as TimeEntry;
           this.startTime = new Date(timeEntry.startTime);
           this.startTimer();
         }
@@ -25,7 +32,7 @@ export function timeTracker() {
       }
     },
 
-    formatTime(ms) {
+    formatTime(ms: number): string {
       const seconds = Math.floor((ms / 1000) % 60);
       const minutes = Math.floor((ms / (1000 * 60)) % 60);
       const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -37,9 +44,11 @@ export function timeTracker() {
 
     startTimer() {
       this.isTracking = true;
-      this.timerInterval = setInterval(() => {
-        this.elapsedTime = Date.now() - this.startTime.getTime();
-      }, 1000);
+      if (this.startTime) {
+        this.timerInterval = setInterval(() => {
+          this.elapsedTime = Date.now() - this.startTime!.getTime();
+        }, 1000);
+      }
     },
 
     async startTracking() {
@@ -49,7 +58,7 @@ export function timeTracker() {
       try {
         const response = await fetch('/time/start', { method: 'POST' });
         if (response.ok) {
-          const timeEntry = await response.json();
+          const timeEntry = await response.json() as TimeEntry;
           this.startTime = new Date(timeEntry.startTime);
           this.startTimer();
           this.message = 'Time tracking started!';
@@ -71,12 +80,14 @@ export function timeTracker() {
       try {
         const response = await fetch('/time/stop', { method: 'POST' });
         if (response.ok) {
-          clearInterval(this.timerInterval);
+          if (this.timerInterval !== null) {
+            clearInterval(this.timerInterval);
+          }
           this.isTracking = false;
           this.message = 'Time tracking stopped!';
           
-          // Optionally redirect to a summary page
-          // window.location.href = '/dashboard';
+          // Dispatch event to refresh summary
+          globalThis.dispatchEvent(new CustomEvent('time-entry-updated'));
         } else {
           throw new Error('Failed to stop time tracking');
         }

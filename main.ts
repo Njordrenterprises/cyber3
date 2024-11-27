@@ -1,4 +1,5 @@
 import { loadEnvironment } from './app/config/env.ts';
+import { UserKV } from './kv/mod.ts';
 
 // Load environment variables before any other imports
 await loadEnvironment();
@@ -10,9 +11,6 @@ const { GoogleProvider, GitHubProvider, TwitterProvider } = initializeProviders(
 // Import the rest of the application
 import { OAuth } from './auth/oauth.ts';
 import { SessionManager } from './auth/session.ts';
-import { UserKV } from './kv/mod.ts';
-import { startTimeTracking } from './functions/time/start.ts';
-import { stopTimeTracking } from './functions/time/stop.ts';
 
 // Move requireAuth to the top and make it return only Response
 async function requireAuth(req: Request): Promise<Response> {
@@ -56,18 +54,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     return await Deno.readFile('./pages/dashboard.html')
-      .then(data => new Response(data, {
-        headers: { 'Content-Type': 'text/html' },
-      }));
-  }
-
-  if (url.pathname === '/cards/dashboard') {
-    const authResult = await requireAuth(req);
-    if (authResult.status === 302) {
-      return authResult;
-    }
-
-    return await Deno.readFile('./cards/dashboard-card.html')
       .then(data => new Response(data, {
         headers: { 'Content-Type': 'text/html' },
       }));
@@ -176,47 +162,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }));
   }
 
-  if (url.pathname === '/cards/time') {
-    const authResult = await requireAuth(req);
-    if (authResult.status === 302) {
-      return authResult;
-    }
-
-    return await Deno.readFile('./cards/time.html')
-      .then(data => new Response(data, {
-        headers: { 'Content-Type': 'text/html' },
-      }));
-  }
-
-  if (url.pathname === '/functions/time/tracker.ts') {
-    const file = await Deno.readFile('./functions/time/tracker.ts');
-    return new Response(file, {
-      headers: { 
-        'Content-Type': 'application/javascript',
-        'Cache-Control': 'no-cache'
-      },
-    });
-  }
-
-  if (url.pathname === '/time/start') {
-    const authResult = await requireAuth(req);
-    if (authResult.status === 302) {
-      return authResult;
-    }
-    const session = JSON.parse(await authResult.text());
-    return await startTimeTracking(session.userId);
-  }
-
-  if (url.pathname === '/time/stop') {
-    const authResult = await requireAuth(req);
-    if (authResult.status === 302) {
-      return authResult;
-    }
-    const session = JSON.parse(await authResult.text());
-    return await stopTimeTracking(session.userId);
-  }
-
-  if (url.pathname === '/time/active') {
+  // Project routes
+  if (url.pathname === '/projects/list') {
     const authResult = await requireAuth(req);
     if (authResult.status === 302) {
       return authResult;
@@ -224,27 +171,133 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const session = JSON.parse(await authResult.text());
     
     const kv = await Deno.openKv();
-    const activeEntry = await kv.get(['users', session.userId, 'activeTimeEntry']);
+    const userKv = new UserKV(kv, session.userId);
+    const projects = await userKv.listProjects();
     
-    if (!activeEntry.value) {
-      return new Response('No active time entry', { status: 404 });
-    }
-    
-    return new Response(JSON.stringify(activeEntry.value), {
+    return new Response(JSON.stringify(projects), {
       headers: { 'Content-Type': 'application/json' }
     });
   }
 
-  // Handle HTMX card requests
-  if (url.pathname === '/cards/login') {
-    return await Deno.readFile('./cards/login-card.html')
+  if (url.pathname === '/projects/create' && req.method === 'POST') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const body = await req.json();
+    const { name, description } = body;
+    
+    const kv = await Deno.openKv();
+    const userKv = new UserKV(kv, session.userId);
+    const project = await userKv.createProject(name, description);
+    
+    return new Response(JSON.stringify(project), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Time entry routes
+  if (url.pathname === '/time/start' && req.method === 'POST') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const body = await req.json();
+    const { projectId, description } = body;
+    
+    const kv = await Deno.openKv();
+    const userKv = new UserKV(kv, session.userId);
+    
+    try {
+      const timeEntry = await userKv.startTimeEntry(projectId, description);
+      return new Response(JSON.stringify(timeEntry), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return new Response(JSON.stringify({ error: errorMessage }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  if (url.pathname === '/time/stop' && req.method === 'POST') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const kv = await Deno.openKv();
+    const userKv = new UserKV(kv, session.userId);
+    
+    try {
+      const timeEntry = await userKv.stopTimeEntry();
+      return new Response(JSON.stringify(timeEntry), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return new Response(JSON.stringify({ error: errorMessage }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  if (url.pathname === '/time/entries') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const params = new URL(req.url).searchParams;
+    const projectId = params.get('projectId') || undefined;
+    const dateStr = params.get('date');
+    
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+    
+    if (dateStr) {
+      startDate = new Date(dateStr);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(dateStr);
+      endDate.setHours(23, 59, 59, 999);
+    }
+    
+    const kv = await Deno.openKv();
+    const userKv = new UserKV(kv, session.userId);
+    const entries = await userKv.getTimeEntries({ projectId, startDate, endDate });
+    
+    return new Response(JSON.stringify(entries), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Static file routes
+  if (url.pathname === '/') {
+    return await Deno.readFile('./pages/index.html')
       .then(data => new Response(data, {
         headers: { 'Content-Type': 'text/html' },
       }));
   }
 
-  if (url.pathname === '/cards/header') {
-    return await Deno.readFile('./cards/header-card.html')
+  if (url.pathname === '/login') {
+    return await Deno.readFile('./pages/login.html')
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': 'text/html' },
+      }));
+  }
+
+  // Card routes
+  if (url.pathname === '/cards/login') {
+    return await Deno.readFile('./cards/login-card.html')
       .then(data => new Response(data, {
         headers: { 'Content-Type': 'text/html' },
       }));
@@ -257,9 +310,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }));
   }
 
-  // Static file routes
-  if (url.pathname === '/') {
-    return await Deno.readFile('./pages/index.html')
+  if (url.pathname === '/cards/header') {
+    return await Deno.readFile('./cards/header-card.html')
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': 'text/html' },
+      }));
+  }
+
+  if (url.pathname === '/cards/dashboard') {
+    return await Deno.readFile('./cards/dashboard-card.html')
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': 'text/html' },
+      }));
+  }
+
+  if (url.pathname === '/cards/time') {
+    return await Deno.readFile('./cards/time.html')
       .then(data => new Response(data, {
         headers: { 'Content-Type': 'text/html' },
       }));

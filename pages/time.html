@@ -9,13 +9,129 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
-    <div class="main-container">
+    <div class="main-container" x-data="{ selectedProjectId: null }">
         <div class="header-card">
             <h1 class="cyber-title" data-text="TIME TRACKER">TIME TRACKER</h1>
             <p class="cyber-subtitle">TRACK YOUR CYBER TIME</p>
         </div>
         
-        <!-- Time tracking component -->
+        <!-- Project Selection/Creation -->
+        <div class="card project-card" 
+             x-data="{
+                 projects: [],
+                 newProjectName: '',
+                 showNewProject: false,
+                 isLoading: false,
+                 message: '',
+
+                 async init() {
+                     await this.loadProjects();
+                     await this.setLastProject();
+                 },
+
+                 async loadProjects() {
+                     try {
+                         const response = await fetch('/projects/list');
+                         if (response.ok) {
+                             this.projects = await response.json();
+                         }
+                     } catch (error) {
+                         console.error('Error loading projects:', error);
+                     }
+                 },
+
+                 async setLastProject() {
+                     try {
+                         const response = await fetch('/time/entries?limit=1');
+                         if (response.ok) {
+                             const entries = await response.json();
+                             if (entries.length > 0) {
+                                 $data.selectedProjectId = entries[0].projectId;
+                             }
+                         }
+                     } catch (error) {
+                         console.error('Error getting last project:', error);
+                     }
+                 },
+
+                 async createProject() {
+                     if (!this.newProjectName.trim()) return;
+                     
+                     this.isLoading = true;
+                     try {
+                         const response = await fetch('/projects/create', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ name: this.newProjectName })
+                         });
+                         
+                         if (response.ok) {
+                             const project = await response.json();
+                             this.projects.push(project);
+                             $data.selectedProjectId = project.id;
+                             this.newProjectName = '';
+                             this.showNewProject = false;
+                             this.message = 'Project created successfully!';
+                         }
+                     } catch (error) {
+                         console.error('Error creating project:', error);
+                         this.message = 'Error creating project';
+                     } finally {
+                         this.isLoading = false;
+                     }
+                 }
+             }">
+            <h2 class="cyber-title-small">Project Selection</h2>
+            
+            <div class="project-controls">
+                <template x-if="!showNewProject">
+                    <div class="project-select">
+                        <select x-model="$data.selectedProjectId" 
+                                class="cyber-select"
+                                :disabled="isLoading">
+                            <option value="">Select a Project</option>
+                            <template x-for="project in projects" :key="project.id">
+                                <option :value="project.id" x-text="project.name"></option>
+                            </template>
+                        </select>
+                        <button class="btn" 
+                                @click="showNewProject = true"
+                                :disabled="isLoading">
+                            New Project
+                        </button>
+                    </div>
+                </template>
+
+                <template x-if="showNewProject">
+                    <div class="project-create">
+                        <input type="text" 
+                               x-model="newProjectName"
+                               class="cyber-input"
+                               placeholder="Project Name"
+                               :disabled="isLoading">
+                        <div class="project-actions">
+                            <button class="btn" 
+                                    @click="createProject()"
+                                    :disabled="isLoading || !newProjectName.trim()">
+                                Create
+                            </button>
+                            <button class="btn cancel-btn" 
+                                    @click="showNewProject = false"
+                                    :disabled="isLoading">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="message" 
+                     x-text="message"
+                     class="project-message"
+                     @animationend="message = ''"></div>
+            </div>
+        </div>
+        
+        <!-- Time Tracking Card -->
         <div class="card time-card" 
              x-data="{
                  isTracking: false,
@@ -24,6 +140,7 @@
                  elapsedTime: 0,
                  timerInterval: null,
                  message: '',
+                 description: '',
 
                  init() {
                      this.checkActiveTimeEntry();
@@ -35,6 +152,7 @@
                          if (response.ok) {
                              const timeEntry = await response.json();
                              this.startTime = new Date(timeEntry.startTime);
+                             this.description = timeEntry.description;
                              this.startTimer();
                          }
                      } catch (error) {
@@ -60,11 +178,27 @@
                  },
 
                  async startTracking() {
+                     if (!$data.selectedProjectId) {
+                         this.message = 'Please select a project first';
+                         return;
+                     }
+                     if (!this.description.trim()) {
+                         this.message = 'Please enter what you are working on';
+                         return;
+                     }
+
                      this.isLoading = true;
                      this.message = 'Starting time tracking...';
 
                      try {
-                         const response = await fetch('/time/start', { method: 'POST' });
+                         const response = await fetch('/time/start', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({
+                                 projectId: $data.selectedProjectId,
+                                 description: this.description
+                             })
+                         });
                          if (response.ok) {
                              const timeEntry = await response.json();
                              this.startTime = new Date(timeEntry.startTime);
@@ -90,7 +224,11 @@
                          if (response.ok) {
                              clearInterval(this.timerInterval);
                              this.isTracking = false;
+                             this.description = '';
                              this.message = 'Time tracking stopped!';
+                             
+                             // Dispatch event to refresh summary
+                             this.$dispatch('time-entry-updated');
                          } else {
                              throw new Error('Failed to stop time tracking');
                          }
@@ -101,16 +239,19 @@
                          this.isLoading = false;
                      }
                  }
-             }"
-             x-init="init()">
+             }">
             
             <div class="timer-display">
                 <template x-if="!isTracking">
                     <div class="start-prompt">
-                        <p class="cyber-subtitle">Ready to start tracking?</p>
+                        <p class="cyber-subtitle">What are you working on?</p>
+                        <textarea class="cyber-input description-input"
+                                  x-model="description"
+                                  placeholder="Enter task description..."
+                                  :disabled="isLoading"></textarea>
                         <button class="btn" 
                                 @click="startTracking"
-                                :disabled="isLoading">
+                                :disabled="isLoading || !description.trim()">
                             Start Tracking
                         </button>
                     </div>
@@ -119,6 +260,7 @@
                 <template x-if="isTracking">
                     <div class="active-timer">
                         <p class="timer" x-text="formatTime(elapsedTime)"></p>
+                        <p class="current-task" x-text="description"></p>
                         <div class="timer-controls">
                             <button class="btn stop-btn" 
                                     @click="stopTracking"
@@ -132,6 +274,127 @@
 
             <div class="timer-status" x-show="message">
                 <p x-text="message"></p>
+            </div>
+        </div>
+
+        <!-- Time Entries Summary -->
+        <div class="card summary-card"
+             x-data="{
+                 entries: [],
+                 isLoading: false,
+                 projectName: '',
+
+                 async init() {
+                     await this.loadEntries();
+                     // Listen for time entry updates and project changes
+                     this.$watch('$data.selectedProjectId', async () => {
+                         await this.loadEntries();
+                         await this.updateProjectName();
+                     });
+                 },
+
+                 async loadEntries() {
+                     this.isLoading = true;
+                     try {
+                         const url = new URL('/time/entries', window.location.origin);
+                         if ($data.selectedProjectId) {
+                             url.searchParams.set('projectId', $data.selectedProjectId);
+                             await this.updateProjectName();
+                         }
+                         const response = await fetch(url);
+                         if (response.ok) {
+                             this.entries = await response.json();
+                         }
+                     } catch (error) {
+                         console.error('Error loading time entries:', error);
+                     } finally {
+                         this.isLoading = false;
+                     }
+                 },
+
+                 async updateProjectName() {
+                     if (!$data.selectedProjectId) {
+                         this.projectName = 'All Projects';
+                         return;
+                     }
+                     try {
+                         const response = await fetch('/projects/list');
+                         if (response.ok) {
+                             const projects = await response.json();
+                             const project = projects.find(p => p.id === $data.selectedProjectId);
+                             this.projectName = project ? project.name : 'All Projects';
+                         }
+                     } catch (error) {
+                         console.error('Error getting project name:', error);
+                         this.projectName = 'All Projects';
+                     }
+                 },
+
+                 formatTime(ms) {
+                     const seconds = Math.floor((ms / 1000) % 60);
+                     const minutes = Math.floor((ms / (1000 * 60)) % 60);
+                     const hours = Math.floor(ms / (1000 * 60 * 60));
+
+                     return `${hours.toString().padStart(2, '0')}:${
+                         minutes.toString().padStart(2, '0')}:${
+                         seconds.toString().padStart(2, '0')}`;
+                 },
+
+                 formatDuration(startTime, endTime) {
+                     const duration = new Date(endTime || new Date()) - new Date(startTime);
+                     return this.formatTime(duration);
+                 },
+
+                 format12Hour(dateStr) {
+                     return new Date(dateStr).toLocaleTimeString('en-US', {
+                         hour: 'numeric',
+                         minute: '2-digit',
+                         hour12: true
+                     });
+                 },
+
+                 formatDate(dateStr) {
+                     return new Date(dateStr).toLocaleDateString('en-US', {
+                         weekday: 'short',
+                         month: 'short',
+                         day: 'numeric'
+                     });
+                 }
+             }"
+             x-init="init"
+             @time-entry-updated.window="loadEntries">
+            
+            <h2 class="cyber-title-small" x-text="projectName + ' Time Entries'"></h2>
+
+            <div class="summary-table" x-show="entries.length > 0">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="entry in entries" :key="entry.id">
+                            <tr>
+                                <td x-text="formatDate(entry.startTime)"></td>
+                                <td x-text="format12Hour(entry.startTime)"></td>
+                                <td>
+                                    <span x-text="entry.endTime ? format12Hour(entry.endTime) : 'In Progress'"></span>
+                                </td>
+                                <td x-text="formatDuration(entry.startTime, entry.endTime)"></td>
+                                <td x-text="entry.description"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-entries" x-show="!isLoading && entries.length === 0">
+                <p>No time entries found</p>
             </div>
         </div>
     </div>

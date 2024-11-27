@@ -257,3 +257,146 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* Project card */
+.project-card {
+  margin-bottom: 2rem;
+}
+
+.project-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.project-select {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.project-create {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.project-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.project-message {
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 255, 157, 0.1);
+  color: #00ff9d;
+  text-align: center;
+  animation: fadeOut 3s forwards;
+}
+
+/* Cyber form elements */
+.cyber-select,
+.cyber-input {
+  background: rgba(0, 255, 157, 0.1);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  border-radius: 4px;
+  color: #00ff9d;
+  padding: 0.5rem 1rem;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.cyber-select:focus,
+.cyber-input:focus {
+  outline: none;
+  border-color: #00ff9d;
+  box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+}
+
+.cyber-select option {
+  background: #0f172a;
+  color: #00ff9d;
+}
+
+.description-input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Summary card */
+.summary-card {
+  margin-top: 2rem;
+}
+
+.summary-controls {
+  margin-bottom: 1rem;
+}
+
+.summary-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.summary-table table {
+  width: 100%;
+  border-collapse: collapse;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.summary-table th,
+.summary-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 255, 157, 0.2);
+}
+
+.summary-table th {
+  color: #00ff9d;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.summary-table tr:hover {
+  background: rgba(0, 255, 157, 0.05);
+}
+
+.no-entries {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Animations */
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Current task display */
+.current-task {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  background: rgba(0, 255, 157, 0.1);
+  border-radius: 4px;
+  word-break: break-word;
+}
+
+/* Small cyber title */
+.cyber-title-small {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  color: #00ff9d;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+}

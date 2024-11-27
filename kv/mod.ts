@@ -4,73 +4,27 @@ export interface UserSchema {
   email: string;
   name: string;
   createdAt: Date;
-  databases: UserDatabase[];
-}
-
-export interface UserDatabase {
-  id: string;
-  name: string;
-  createdAt: Date;
-  schema: DatabaseSchema;
-}
-
-export interface DatabaseSchema {
-  timeEntries: TimeEntry[];
-  projects: Project[];
-  clients: Client[];
-  invoices: Invoice[];
-  apiKeys: ApiKey[];
-}
-
-// Specific schema interfaces
-export interface TimeEntry {
-  id: string;
-  userId: string;
-  projectId: string;
-  startTime: Date;
-  endTime: Date;
-  description: string;
-  tags: string[];
-  rate: number;
 }
 
 export interface Project {
   id: string;
+  userId: string;
   name: string;
-  clientId: string;
-  rate: number;
-  status: 'active' | 'archived';
-}
-
-export interface Client {
-  id: string;
-  name: string;
-  email: string;
-  billingInfo: BillingInfo;
-}
-
-export interface Invoice {
-  id: string;
-  clientId: string;
-  timeEntries: string[]; // Array of timeEntry IDs
-  amount: number;
-  status: 'draft' | 'sent' | 'paid';
+  description?: string;
   createdAt: Date;
+  updatedAt: Date;
+  isArchived: boolean;
 }
 
-export interface ApiKey {
+export interface TimeEntry {
   id: string;
-  name: string;
-  key: string;
-  createdAt: Date;
-  lastUsed: Date;
-  permissions: string[];
-}
-
-interface BillingInfo {
-  address: string;
-  paymentTerms: string;
-  currency: string;
+  userId: string;
+  projectId: string;
+  description: string;
+  startTime: Date;
+  endTime: Date | null;
+  duration?: number; // Calculated when entry is completed
+  tags: string[];
 }
 
 // KV Database class
@@ -88,18 +42,7 @@ export class UserKV {
     const userKey = ['users', user.id];
     const newUser: UserSchema = {
       ...user,
-      databases: [{
-        id: crypto.randomUUID(),
-        name: 'default',
-        createdAt: new Date(),
-        schema: {
-          timeEntries: [],
-          projects: [],
-          clients: [],
-          invoices: [],
-          apiKeys: []
-        }
-      }]
+      createdAt: new Date()
     };
 
     // Atomic operation to ensure user doesn't already exist
@@ -115,51 +58,157 @@ export class UserKV {
     return new UserKV(kv, user.id);
   }
 
-  // Time entries methods
-  async addTimeEntry(entry: Omit<TimeEntry, 'id'>): Promise<TimeEntry> {
-    const id = crypto.randomUUID();
-    const timeEntry: TimeEntry = { ...entry, id };
-    await this.kv.set(['users', this.userId, 'timeEntries', id], timeEntry);
+  // Project methods
+  async createProject(name: string, description?: string): Promise<Project> {
+    const project: Project = {
+      id: crypto.randomUUID(),
+      userId: this.userId,
+      name,
+      description,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isArchived: false
+    };
+
+    await this.kv.set(['projects', this.userId, project.id], project);
+    return project;
+  }
+
+  async getProject(projectId: string): Promise<Project | null> {
+    const result = await this.kv.get<Project>(['projects', this.userId, projectId]);
+    return result.value;
+  }
+
+  async listProjects(includeArchived = false): Promise<Project[]> {
+    const projects: Project[] = [];
+    const iter = this.kv.list<Project>({ prefix: ['projects', this.userId] });
+    
+    for await (const { value } of iter) {
+      if (includeArchived || !value.isArchived) {
+        projects.push(value);
+      }
+    }
+
+    return projects;
+  }
+
+  async archiveProject(projectId: string): Promise<void> {
+    const project = await this.getProject(projectId);
+    if (!project) throw new Error('Project not found');
+
+    project.isArchived = true;
+    project.updatedAt = new Date();
+    await this.kv.set(['projects', this.userId, projectId], project);
+  }
+
+  // Time entry methods
+  async startTimeEntry(projectId: string, description: string): Promise<TimeEntry> {
+    // Verify project exists
+    const project = await this.getProject(projectId);
+    if (!project) throw new Error('Project not found');
+
+    // Check for active time entry
+    const activeEntry = await this.getActiveTimeEntry();
+    if (activeEntry) throw new Error('Active time entry exists');
+
+    const timeEntry: TimeEntry = {
+      id: crypto.randomUUID(),
+      userId: this.userId,
+      projectId,
+      description,
+      startTime: new Date(),
+      endTime: null,
+      tags: []
+    };
+
+    await this.kv.atomic()
+      .set(['time-entries', this.userId, timeEntry.id], timeEntry)
+      .set(['active-time-entry', this.userId], timeEntry)
+      .commit();
+
     return timeEntry;
   }
 
-  async getTimeEntries(): Promise<TimeEntry[]> {
-    const entries = this.kv.list<TimeEntry>({ prefix: ['users', this.userId, 'timeEntries'] });
-    const timeEntries: TimeEntry[] = [];
-    for await (const entry of entries) {
-      timeEntries.push(entry.value);
-    }
-    return timeEntries;
-  }
+  async stopTimeEntry(): Promise<TimeEntry> {
+    const activeEntry = await this.getActiveTimeEntry();
+    if (!activeEntry) throw new Error('No active time entry');
 
-  // Project methods
-  async addProject(project: Omit<Project, 'id'>): Promise<Project> {
-    const id = crypto.randomUUID();
-    const newProject: Project = { ...project, id };
-    await this.kv.set(['users', this.userId, 'projects', id], newProject);
-    return newProject;
-  }
+    const endTime = new Date();
+    const duration = endTime.getTime() - activeEntry.startTime.getTime();
 
-  // Client methods
-  async addClient(client: Omit<Client, 'id'>): Promise<Client> {
-    const id = crypto.randomUUID();
-    const newClient: Client = { ...client, id };
-    await this.kv.set(['users', this.userId, 'clients', id], newClient);
-    return newClient;
-  }
-
-  // API key methods
-  async createApiKey(name: string, permissions: string[]): Promise<ApiKey> {
-    const apiKey: ApiKey = {
-      id: crypto.randomUUID(),
-      name,
-      key: crypto.randomUUID(),
-      permissions,
-      createdAt: new Date(),
-      lastUsed: new Date()
+    const completedEntry: TimeEntry = {
+      ...activeEntry,
+      endTime,
+      duration
     };
-    await this.kv.set(['users', this.userId, 'apiKeys', apiKey.id], apiKey);
-    return apiKey;
+
+    await this.kv.atomic()
+      .set(['time-entries', this.userId, activeEntry.id], completedEntry)
+      .delete(['active-time-entry', this.userId])
+      .commit();
+
+    return completedEntry;
+  }
+
+  async getActiveTimeEntry(): Promise<TimeEntry | null> {
+    const result = await this.kv.get<TimeEntry>(['active-time-entry', this.userId]);
+    return result.value;
+  }
+
+  async getTimeEntries(options: {
+    projectId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  } = {}): Promise<TimeEntry[]> {
+    const entries: TimeEntry[] = [];
+    const iter = this.kv.list<TimeEntry>({ prefix: ['time-entries', this.userId] });
+    
+    for await (const { value } of iter) {
+      let include = true;
+
+      // Filter by project
+      if (options.projectId && value.projectId !== options.projectId) {
+        include = false;
+      }
+
+      // Filter by date range
+      if (options.startDate && value.startTime < options.startDate) {
+        include = false;
+      }
+      if (options.endDate && value.startTime > options.endDate) {
+        include = false;
+      }
+
+      if (include) {
+        entries.push(value);
+      }
+    }
+
+    // Sort by start time, newest first
+    return entries.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+  }
+
+  async getProjectSummary(projectId: string, startDate?: Date, endDate?: Date): Promise<{
+    totalDuration: number;
+    entryCount: number;
+    entries: TimeEntry[];
+  }> {
+    const entries = await this.getTimeEntries({ projectId, startDate, endDate });
+    
+    let totalDuration = 0;
+    for (const entry of entries) {
+      if (entry.duration) {
+        totalDuration += entry.duration;
+      } else if (entry.endTime) {
+        totalDuration += entry.endTime.getTime() - entry.startTime.getTime();
+      }
+    }
+
+    return {
+      totalDuration,
+      entryCount: entries.length,
+      entries
+    };
   }
 
   // Add to UserKV class
