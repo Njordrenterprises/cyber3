@@ -122,11 +122,20 @@
                          
                          if (response.ok) {
                              const project = await response.json();
-                             this.projects.push(project);
+                             this.projects = [...this.projects, project].sort((a, b) => 
+                                 a.name.localeCompare(b.name)
+                             );
                              $data.selectedProjectId = project.id;
                              this.newProjectName = '';
                              this.showNewProject = false;
                              this.message = 'Project created successfully!';
+                             this.$nextTick(() => {
+                                 const select = document.querySelector('select[x-model="$data.selectedProjectId"]');
+                                 if (select) {
+                                     select.value = project.id;
+                                     select.dispatchEvent(new Event('change'));
+                                 }
+                             });
                          }
                      } catch (error) {
                          console.error('Error creating project:', error);
