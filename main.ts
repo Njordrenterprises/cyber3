@@ -178,9 +178,35 @@ Deno.serve(async (req: Request): Promise<Response> => {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
-    } catch (error) {
+    } catch (_error) {
       return new Response(JSON.stringify({ error: 'Failed to get active time entry' }), {
         status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  if (url.pathname.match(/^\/time\/entries\/[^/]+$/) && req.method === 'PUT') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const entryId = url.pathname.split('/').pop()!;
+    const body = await req.json();
+    
+    const kv = await Deno.openKv();
+    const userKv = new UserKV(kv, session.userId);
+    
+    try {
+      const updatedEntry = await userKv.updateTimeEntry(entryId, body);
+      return new Response(JSON.stringify(updatedEntry), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (_error) {
+      return new Response(JSON.stringify({ error: 'Failed to update time entry' }), {
+        status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
@@ -229,7 +255,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify(updatedProject), {
         headers: { 'Content-Type': 'application/json' }
       });
-    } catch (error) {
+    } catch (_error) {
       return new Response(JSON.stringify({ error: 'Failed to update project' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }

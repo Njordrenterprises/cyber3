@@ -236,4 +236,27 @@ export class UserKV {
     }
     return result.value;
   }
+
+  async updateTimeEntry(entryId: string, updates: Partial<TimeEntry>): Promise<TimeEntry> {
+    const entryKey = ['users', this.userId, 'time-entries', entryId];
+    const entry = await this.kv.get<TimeEntry>(entryKey);
+    
+    if (!entry.value) {
+      throw new Error('Time entry not found');
+    }
+
+    const updatedEntry: TimeEntry = {
+      ...entry.value,
+      ...updates
+    };
+
+    // If this is the active entry, update it there too
+    const activeEntry = await this.getActiveTimeEntry();
+    if (activeEntry && activeEntry.id === entryId) {
+      await this.kv.set(['users', this.userId, 'activeTimeEntry'], updatedEntry);
+    }
+
+    await this.kv.set(entryKey, updatedEntry);
+    return updatedEntry;
+  }
 }

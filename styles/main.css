@@ -152,6 +152,30 @@ body {
   font-weight: 600;
 }
 
+.summary-table td {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.summary-table td:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.summary-table td input {
+  width: 100%;
+  background-color: var(--cyber-bg);
+  border: 1px solid var(--cyber-accent);
+  color: var(--cyber-text);
+  padding: 0.25rem;
+  border-radius: 2px;
+}
+
+.summary-table td input:focus {
+  outline: none;
+  border-color: var(--cyber-highlight);
+  box-shadow: 0 0 5px var(--cyber-highlight);
+}
+
 /* Mobile responsive styles */
 @media screen and (max-width: 768px) {
   .summary-table table {
@@ -186,5 +210,430 @@ body {
     float: left;
     font-weight: bold;
     color: var(--cyber-highlight);
+  }
+
+  .summary-table td input {
+    text-align: right;
+    max-width: 60%;
+    float: right;
+  }
+}
+
+.time-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.time-input-wrapper input[type="time"] {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  color: var(--cyber-text);
+  background-color: var(--cyber-bg);
+  border: 1px solid var(--cyber-accent);
+  border-radius: 4px;
+  cursor: text;
+}
+
+.time-input-wrapper input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.time-input-wrapper input[type="time"]:focus {
+  outline: none;
+  border-color: var(--cyber-highlight);
+  box-shadow: 0 0 5px var(--cyber-highlight);
+}
+
+/* Mobile styles update */
+@media screen and (max-width: 768px) {
+  .time-input-wrapper input[type="time"] {
+    text-align: right;
+    max-width: 60%;
+    float: right;
+  }
+}
+
+.time-selector-wrapper {
+  position: absolute;
+  z-index: 10;
+  background: var(--cyber-bg);
+  border: 2px solid var(--cyber-accent);
+  border-radius: 4px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  min-width: 240px;
+}
+
+.time-selectors {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.time-selectors select {
+  padding: 0.5rem;
+  font-size: 1.125rem;
+  background-color: var(--cyber-bg);
+  border: 1px solid var(--cyber-accent);
+  color: var(--cyber-text);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hour-select, .minute-select {
+  width: 70px;
+}
+
+.ampm-select {
+  width: 60px;
+}
+
+.time-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.time-actions .btn {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Mobile styles */
+@media screen and (max-width: 768px) {
+  .time-selector-wrapper {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .time-selectors {
+    justify-content: center;
+  }
+
+  .time-selectors select {
+    font-size: 1.25rem;
+    padding: 0.75rem;
+  }
+
+  .time-actions {
+    flex-direction: column;
+  }
+
+  .time-actions .btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+}
+
+.modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--cyber-bg);
+  border: 2px solid var(--cyber-accent);
+  border-radius: 4px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: var(--cyber-highlight);
+  text-align: center;
+}
+
+.modal-body {
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modal-actions .btn {
+  flex: 1;
+}
+
+.time-selectors {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.time-selectors select {
+  padding: 0.75rem;
+  font-size: 1.25rem;
+  background-color: var(--cyber-bg);
+  border: 1px solid var(--cyber-accent);
+  color: var(--cyber-text);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-selectors select:hover,
+.time-selectors select:focus {
+  border-color: var(--cyber-highlight);
+  box-shadow: 0 0 10px var(--cyber-highlight);
+}
+
+.hour-select, .minute-select {
+  width: 80px;
+}
+
+.ampm-select {
+  width: 70px;
+}
+
+.description-input {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  padding: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  background-color: var(--cyber-bg);
+  border: 1px solid var(--cyber-accent);
+  color: var(--cyber-text);
+  border-radius: 4px;
+}
+
+.description-input:focus {
+  outline: none;
+  border-color: var(--cyber-highlight);
+  box-shadow: 0 0 10px var(--cyber-highlight);
+}
+
+/* Mobile styles */
+@media screen and (max-width: 768px) {
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .time-selectors select {
+    padding: 1rem;
+    font-size: 1.5rem;
+  }
+}
+
+.calendar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: 2px solid var(--cyber-accent);
+  border-radius: 4px;
+  background: var(--cyber-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-button:hover {
+  border-color: var(--cyber-highlight);
+  box-shadow: 0 0 10px var(--cyber-highlight);
+  transform: translateY(-1px);
+}
+
+.calendar-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--cyber-accent);
+  transition: all 0.2s ease;
+}
+
+.calendar-button:hover .calendar-icon {
+  color: var(--cyber-highlight);
+}
+
+.calendar-modal {
+  max-width: 320px !important;
+}
+
+.calendar-wrapper {
+  position: relative;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.cyber-calendar {
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Calendar picker styles */
+::-webkit-calendar-picker {
+  background-color: var(--cyber-bg);
+  color: var(--cyber-text);
+  border: 2px solid var(--cyber-accent);
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+::-webkit-calendar-picker-indicator {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+::-webkit-datetime-edit {
+  color: var(--cyber-text);
+}
+
+::-webkit-datetime-edit-fields-wrapper {
+  background: var(--cyber-bg);
+}
+
+::-webkit-datetime-edit-text {
+  color: var(--cyber-accent);
+}
+
+::-webkit-datetime-edit-month-field,
+::-webkit-datetime-edit-day-field,
+::-webkit-datetime-edit-year-field {
+  color: var(--cyber-text);
+  background: var(--cyber-bg);
+  padding: 0.25rem;
+  border-radius: 2px;
+}
+
+::-webkit-datetime-edit-month-field:focus,
+::-webkit-datetime-edit-day-field:focus,
+::-webkit-datetime-edit-year-field:focus {
+  background: var(--cyber-accent);
+  color: var(--cyber-bg);
+}
+
+::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+/* Mobile styles */
+@media screen and (max-width: 768px) {
+  .calendar-button {
+    padding: 0.75rem;
+  }
+
+  .calendar-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .calendar-modal {
+    padding: 1.5rem;
+  }
+}
+
+.simple-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.calendar-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--cyber-accent);
+}
+
+.simple-date:hover .calendar-icon {
+  color: var(--cyber-highlight);
+}
+
+.date-selectors {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.date-selectors select {
+  padding: 0.75rem;
+  font-size: 1.25rem;
+  background-color: var(--cyber-bg);
+  border: 1px solid var(--cyber-accent);
+  color: var(--cyber-text);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-selectors select:hover,
+.date-selectors select:focus {
+  border-color: var(--cyber-highlight);
+  box-shadow: 0 0 10px var(--cyber-highlight);
+}
+
+.month-select {
+  width: 140px;
+}
+
+.day-select {
+  width: 70px;
+}
+
+.year-select {
+  width: 90px;
+}
+
+/* Mobile styles */
+@media screen and (max-width: 768px) {
+  .date-selectors {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .date-selectors select {
+    width: 100% !important;
+    padding: 1rem;
+    font-size: 1.5rem;
+  }
+}
+
+/* Mobile styles */
+@media screen and (max-width: 768px) {
+  .summary-table td[data-label="Date"] {
+    text-align: right;
+  }
+  
+  .simple-date {
+    justify-content: flex-end;
   }
 }

@@ -291,8 +291,6 @@
 
                  async stopTracking() {
                      this.isLoading = true;
-                     this.message = 'Stopping time tracking...';
-
                      try {
                          const response = await fetch('/time/stop', { 
                              method: 'POST',
@@ -312,7 +310,7 @@
                              this.message = 'Time tracking stopped!';
                              
                              // Dispatch event to refresh summary
-                             this.$dispatch('time-entry-updated');
+                             document.dispatchEvent(new CustomEvent('time-entry-updated'));
                          } else {
                              throw new Error(data.error || 'Failed to stop time tracking');
                          }
@@ -366,28 +364,66 @@
              x-data="{
                  entries: [],
                  isLoading: false,
-                 projectName: '',
+                 projectName: 'Time Entries',
 
-                 async init() {
-                     await this.loadEntries();
-                     // Listen for time entry updates and project changes
-                     this.$watch('$data.selectedProjectId', async () => {
-                         await this.loadEntries();
-                         await this.updateProjectName();
+                 init() {
+                     this.loadEntries();
+                     // Listen for time entry updates
+                     document.addEventListener('time-entry-updated', () => {
+                         console.log('Received time-entry-updated event');
+                         this.loadEntries();
+                     });
+                     // Watch for project changes
+                     this.$watch('$data.selectedProjectId', () => {
+                         this.loadEntries();
+                         this.updateProjectName();
                      });
                  },
 
+                 async updateProjectName() {
+                     if (!$data.selectedProjectId) {
+                         this.projectName = 'Time Entries';
+                         return;
+                     }
+                     try {
+                         const response = await fetch('/projects/list');
+                         if (response.ok) {
+                             const projects = await response.json();
+                             const project = projects.find(p => p.id === $data.selectedProjectId);
+                             this.projectName = project ? project.name : 'Time Entries';
+                         }
+                     } catch (error) {
+                         console.error('Error getting project name:', error);
+                         this.projectName = 'Time Entries';
+                     }
+                 },
+
                  async loadEntries() {
+                     console.log('Loading entries...');
                      this.isLoading = true;
                      try {
                          const url = new URL('/time/entries', window.location.origin);
                          if ($data.selectedProjectId) {
                              url.searchParams.set('projectId', $data.selectedProjectId);
-                             await this.updateProjectName();
                          }
                          const response = await fetch(url);
                          if (response.ok) {
-                             this.entries = await response.json();
+                             const data = await response.json();
+                             console.log('Received entries:', data);
+                             this.entries = data.map(entry => {
+                                 const entryDate = new Date(entry.startTime);
+                                 return {
+                                     ...entry,
+                                     editing: null,
+                                     editMonth: entryDate.getMonth(),
+                                     editDay: entryDate.getDate(),
+                                     editYear: entryDate.getFullYear(),
+                                     editHour: null,
+                                     editMinute: null,
+                                     editAmPm: null,
+                                     editDescription: null
+                                 };
+                             });
                          }
                      } catch (error) {
                          console.error('Error loading time entries:', error);
@@ -396,22 +432,20 @@
                      }
                  },
 
-                 async updateProjectName() {
-                     if (!$data.selectedProjectId) {
-                         this.projectName = 'All Projects';
-                         return;
-                     }
-                     try {
-                         const response = await fetch('/projects/list');
-                         if (response.ok) {
-                             const projects = await response.json();
-                             const project = projects.find(p => p.id === $data.selectedProjectId);
-                             this.projectName = project ? project.name : 'All Projects';
-                         }
-                     } catch (error) {
-                         console.error('Error getting project name:', error);
-                         this.projectName = 'All Projects';
-                     }
+                 getTodayDate() {
+                     return new Date();
+                 },
+
+                 openDatePicker(entry) {
+                     console.log('Opening date picker for entry:', entry);
+                     console.log('Entry start time:', entry.startTime);
+                     const entryDate = new Date(entry.startTime);
+                     console.log('Parsed entry date:', entryDate);
+                     entry.editMonth = entryDate.getMonth();
+                     entry.editDay = entryDate.getDate();
+                     entry.editYear = entryDate.getFullYear();
+                     console.log('Set values:', { month: entry.editMonth, day: entry.editDay, year: entry.editYear });
+                     entry.editing = 'date';
                  },
 
                  formatTime(ms) {
@@ -443,10 +477,37 @@
                          month: 'short',
                          day: 'numeric'
                      });
+                 },
+
+                 async updateTimeEntry(entryId, updates) {
+                     try {
+                         const response = await fetch(`/time/entries/${entryId}`, {
+                             method: 'PUT',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify(updates)
+                         });
+
+                         if (response.ok) {
+                             const updatedEntry = await response.json();
+                             const index = this.entries.findIndex(e => e.id === entryId);
+                             if (index !== -1) {
+                                 this.entries[index] = {
+                                     ...updatedEntry,
+                                     editing: null
+                                 };
+                             }
+                         } else {
+                             throw new Error('Failed to update time entry');
+                         }
+                     } catch (error) {
+                         console.error('Error updating time entry:', error);
+                         // Reload entries to ensure consistency
+                         await this.loadEntries();
+                     }
                  }
              }"
              x-init="init"
-             @time-entry-updated.window="loadEntries">
+             @time-entry-updated="loadEntries">
             
             <h2 class="cyber-title-small" x-text="projectName + ' Time Entries'"></h2>
 
@@ -464,13 +525,210 @@
                     <tbody>
                         <template x-for="entry in entries" :key="entry.id">
                             <tr>
-                                <td data-label="Date" x-text="formatDate(entry.startTime)"></td>
-                                <td data-label="Start Time" x-text="format12Hour(entry.startTime)"></td>
-                                <td data-label="End Time">
-                                    <span x-text="entry.endTime ? format12Hour(entry.endTime) : 'In Progress'"></span>
+                                <td data-label="Date" 
+                                    @click="openDatePicker(entry)">
+                                    <template x-if="entry.editing !== 'date'">
+                                        <div class="simple-date">
+                                            <span x-text="formatDate(entry.startTime)"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="entry.editing === 'date'">
+                                        <div class="modal-wrapper" 
+                                             @mousedown.self="entry.editing = null">
+                                            <div class="modal-content" @click.stop>
+                                                <h3 class="modal-title">Select Date</h3>
+                                                <div class="date-selectors">
+                                                    <select class="cyber-select month-select"
+                                                            x-model.number="entry.editMonth">
+                                                        <option value="0">January</option>
+                                                        <option value="1">February</option>
+                                                        <option value="2">March</option>
+                                                        <option value="3">April</option>
+                                                        <option value="4">May</option>
+                                                        <option value="5">June</option>
+                                                        <option value="6">July</option>
+                                                        <option value="7">August</option>
+                                                        <option value="8">September</option>
+                                                        <option value="9">October</option>
+                                                        <option value="10">November</option>
+                                                        <option value="11">December</option>
+                                                    </select>
+                                                    <select class="cyber-select day-select"
+                                                            x-model.number="entry.editDay">
+                                                        <template x-for="day in [...Array(31).keys()].map(i => i + 1)">
+                                                            <option :value="day" x-text="day.toString().padStart(2, '0')"></option>
+                                                        </template>
+                                                    </select>
+                                                    <select class="cyber-select year-select"
+                                                            x-model.number="entry.editYear">
+                                                        <template x-for="year in Array.from({length: 10}, (_, i) => new Date().getFullYear() - 2 + i)">
+                                                            <option :value="year" x-text="year"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                                <div class="modal-actions">
+                                                    <button class="btn" 
+                                                            @click="async () => {
+                                                                const newDate = new Date(entry.startTime);
+                                                                newDate.setFullYear(entry.editYear);
+                                                                newDate.setMonth(entry.editMonth);
+                                                                newDate.setDate(entry.editDay);
+                                                                await updateTimeEntry(entry.id, { startTime: newDate });
+                                                                entry.editing = null;
+                                                            }">
+                                                        Save
+                                                    </button>
+                                                    <button class="btn cancel-btn" 
+                                                            @click.stop="entry.editing = null">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </td>
+                                <td data-label="Start Time"
+                                    @click="entry.editing = entry.editing === 'startTime' ? null : 'startTime'">
+                                    <template x-if="entry.editing !== 'startTime'">
+                                        <span x-text="format12Hour(entry.startTime)"></span>
+                                    </template>
+                                    <template x-if="entry.editing === 'startTime'">
+                                        <div class="modal-wrapper" 
+                                             @mousedown.self="entry.editing = null">
+                                            <div class="modal-content" @click.stop>
+                                                <h3 class="modal-title">Edit Start Time</h3>
+                                                <div class="time-selectors">
+                                                    <select class="cyber-select hour-select"
+                                                            x-model="entry.editHour"
+                                                            x-init="entry.editHour = new Date(entry.startTime).getHours() % 12 || 12">
+                                                        <template x-for="h in [...Array(12).keys()].map(i => i + 1)">
+                                                            <option :value="h" x-text="h.toString().padStart(2, '0')"></option>
+                                                        </template>
+                                                    </select>
+                                                    <select class="cyber-select minute-select"
+                                                            x-model="entry.editMinute"
+                                                            x-init="entry.editMinute = new Date(entry.startTime).getMinutes()">
+                                                        <template x-for="m in [...Array(60).keys()]">
+                                                            <option :value="m" x-text="m.toString().padStart(2, '0')"></option>
+                                                        </template>
+                                                    </select>
+                                                    <select class="cyber-select ampm-select"
+                                                            x-model="entry.editAmPm"
+                                                            x-init="entry.editAmPm = new Date(entry.startTime).getHours() >= 12 ? 'PM' : 'AM'">
+                                                        <option value="AM">AM</option>
+                                                        <option value="PM">PM</option>
+                                                    </select>
+                                                </div>
+                                                <div class="modal-actions">
+                                                    <button class="btn" 
+                                                            @click="async () => {
+                                                                let hours = parseInt(entry.editHour);
+                                                                if (entry.editAmPm === 'PM' && hours !== 12) hours += 12;
+                                                                if (entry.editAmPm === 'AM' && hours === 12) hours = 0;
+                                                                const newDate = new Date(entry.startTime);
+                                                                newDate.setHours(hours, parseInt(entry.editMinute));
+                                                                await updateTimeEntry(entry.id, { startTime: newDate });
+                                                                entry.editing = null;
+                                                            }">
+                                                        Save
+                                                    </button>
+                                                    <button class="btn cancel-btn" 
+                                                            @click.stop="entry.editing = null">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </td>
+                                <td data-label="End Time"
+                                    @click="entry.editing = entry.editing === 'endTime' ? null : 'endTime'">
+                                    <template x-if="entry.editing !== 'endTime'">
+                                        <span x-text="entry.endTime ? format12Hour(entry.endTime) : 'In Progress'"></span>
+                                    </template>
+                                    <template x-if="entry.editing === 'endTime'">
+                                        <div class="modal-wrapper" 
+                                             @mousedown.self="entry.editing = null">
+                                            <div class="modal-content" @click.stop>
+                                                <h3 class="modal-title">Edit End Time</h3>
+                                                <div class="time-selectors">
+                                                    <select class="cyber-select hour-select"
+                                                            x-model="entry.editHour"
+                                                            x-init="entry.editHour = entry.endTime ? (new Date(entry.endTime).getHours() % 12 || 12) : (new Date().getHours() % 12 || 12)">
+                                                        <template x-for="h in [...Array(12).keys()].map(i => i + 1)">
+                                                            <option :value="h" x-text="h.toString().padStart(2, '0')"></option>
+                                                        </template>
+                                                    </select>
+                                                    <select class="cyber-select minute-select"
+                                                            x-model="entry.editMinute"
+                                                            x-init="entry.editMinute = entry.endTime ? new Date(entry.endTime).getMinutes() : new Date().getMinutes()">
+                                                        <template x-for="m in [...Array(60).keys()]">
+                                                            <option :value="m" x-text="m.toString().padStart(2, '0')"></option>
+                                                        </template>
+                                                    </select>
+                                                    <select class="cyber-select ampm-select"
+                                                            x-model="entry.editAmPm"
+                                                            x-init="entry.editAmPm = entry.endTime ? (new Date(entry.endTime).getHours() >= 12 ? 'PM' : 'AM') : (new Date().getHours() >= 12 ? 'PM' : 'AM')">
+                                                        <option value="AM">AM</option>
+                                                        <option value="PM">PM</option>
+                                                    </select>
+                                                </div>
+                                                <div class="modal-actions">
+                                                    <button class="btn" 
+                                                            @click="async () => {
+                                                                let hours = parseInt(entry.editHour);
+                                                                if (entry.editAmPm === 'PM' && hours !== 12) hours += 12;
+                                                                if (entry.editAmPm === 'AM' && hours === 12) hours = 0;
+                                                                const newDate = new Date(entry.startTime);
+                                                                newDate.setHours(hours, parseInt(entry.editMinute));
+                                                                await updateTimeEntry(entry.id, { endTime: newDate });
+                                                                entry.editing = null;
+                                                            }">
+                                                        Save
+                                                    </button>
+                                                    <button class="btn cancel-btn" 
+                                                            @click.stop="entry.editing = null">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </td>
                                 <td data-label="Duration" x-text="formatDuration(entry.startTime, entry.endTime)"></td>
-                                <td data-label="Description" x-text="entry.description"></td>
+                                <td data-label="Description"
+                                    @click="entry.editing = entry.editing === 'description' ? null : 'description'">
+                                    <template x-if="entry.editing !== 'description'">
+                                        <span x-text="entry.description"></span>
+                                    </template>
+                                    <template x-if="entry.editing === 'description'">
+                                        <div class="modal-wrapper"
+                                             @mousedown.self="entry.editing = null">
+                                            <div class="modal-content" @click.stop>
+                                                <h3 class="modal-title">Edit Description</h3>
+                                                <div class="modal-body">
+                                                    <textarea class="cyber-input description-input"
+                                                              x-model="entry.editDescription"
+                                                              x-init="entry.editDescription = entry.description"
+                                                              placeholder="Enter task description..."></textarea>
+                                                </div>
+                                                <div class="modal-actions">
+                                                    <button class="btn" 
+                                                            @click="async () => {
+                                                                await updateTimeEntry(entry.id, { description: entry.editDescription });
+                                                                entry.editing = null;
+                                                            }">
+                                                        Save
+                                                    </button>
+                                                    <button class="btn cancel-btn" 
+                                                            @click.stop="entry.editing = null">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </td>
                             </tr>
                         </template>
                     </tbody>
