@@ -1,0 +1,35 @@
+<div class="card time-card" 
+     x-data="timeTracker"
+     x-init="init()">
+    <h2 class="cyber-title" data-text="TIME TRACKER">TIME TRACKER</h2>
+    
+    <div class="timer-display">
+        <template x-if="!isTracking">
+            <div class="start-prompt">
+                <p class="cyber-subtitle">Ready to start tracking?</p>
+                <button class="btn" 
+                        @click="startTracking"
+                        :disabled="isLoading">
+                    Start Tracking
+                </button>
+            </div>
+        </template>
+
+        <template x-if="isTracking">
+            <div class="active-timer">
+                <p class="timer" x-text="formatTime(elapsedTime)"></p>
+                <div class="timer-controls">
+                    <button class="btn stop-btn" 
+                            @click="stopTracking"
+                            :disabled="isLoading">
+                        Stop Tracking
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <div class="timer-status" x-show="message">
+        <p x-text="message"></p>
+    </div>
+</div>

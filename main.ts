@@ -11,6 +11,8 @@ const { GoogleProvider, GitHubProvider, TwitterProvider } = initializeProviders(
 import { OAuth } from './auth/oauth.ts';
 import { SessionManager } from './auth/session.ts';
 import { UserKV } from './kv/mod.ts';
+import { startTimeTracking } from './functions/time/start.ts';
+import { stopTimeTracking } from './functions/time/stop.ts';
 
 // Move requireAuth to the top and make it return only Response
 async function requireAuth(req: Request): Promise<Response> {
@@ -159,6 +161,78 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return new Response('Authentication failed', { status: 400 });
       }
     }
+  }
+
+  // Time tracking routes
+  if (url.pathname === '/time') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+
+    return await Deno.readFile('./pages/time.html')
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': 'text/html' },
+      }));
+  }
+
+  if (url.pathname === '/cards/time') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+
+    return await Deno.readFile('./cards/time.html')
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': 'text/html' },
+      }));
+  }
+
+  if (url.pathname === '/functions/time/tracker.ts') {
+    const file = await Deno.readFile('./functions/time/tracker.ts');
+    return new Response(file, {
+      headers: { 
+        'Content-Type': 'application/javascript',
+        'Cache-Control': 'no-cache'
+      },
+    });
+  }
+
+  if (url.pathname === '/time/start') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    return await startTimeTracking(session.userId);
+  }
+
+  if (url.pathname === '/time/stop') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    return await stopTimeTracking(session.userId);
+  }
+
+  if (url.pathname === '/time/active') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const kv = await Deno.openKv();
+    const activeEntry = await kv.get(['users', session.userId, 'activeTimeEntry']);
+    
+    if (!activeEntry.value) {
+      return new Response('No active time entry', { status: 404 });
+    }
+    
+    return new Response(JSON.stringify(activeEntry.value), {
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   // Handle HTMX card requests

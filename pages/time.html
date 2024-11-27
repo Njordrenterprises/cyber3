@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Tracking - CYBER CLOCK</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header-card">
+            <h1 class="cyber-title" data-text="TIME TRACKER">TIME TRACKER</h1>
+            <p class="cyber-subtitle">TRACK YOUR CYBER TIME</p>
+        </div>
+        
+        <!-- Time tracking component -->
+        <div class="card time-card" 
+             x-data="{
+                 isTracking: false,
+                 isLoading: false,
+                 startTime: null,
+                 elapsedTime: 0,
+                 timerInterval: null,
+                 message: '',
+
+                 init() {
+                     this.checkActiveTimeEntry();
+                 },
+
+                 async checkActiveTimeEntry() {
+                     try {
+                         const response = await fetch('/time/active');
+                         if (response.ok) {
+                             const timeEntry = await response.json();
+                             this.startTime = new Date(timeEntry.startTime);
+                             this.startTimer();
+                         }
+                     } catch (error) {
+                         console.error('Error checking active time entry:', error);
+                     }
+                 },
+
+                 formatTime(ms) {
+                     const seconds = Math.floor((ms / 1000) % 60);
+                     const minutes = Math.floor((ms / (1000 * 60)) % 60);
+                     const hours = Math.floor(ms / (1000 * 60 * 60));
+
+                     return `${hours.toString().padStart(2, '0')}:${
+                         minutes.toString().padStart(2, '0')}:${
+                         seconds.toString().padStart(2, '0')}`;
+                 },
+
+                 startTimer() {
+                     this.isTracking = true;
+                     this.timerInterval = setInterval(() => {
+                         this.elapsedTime = Date.now() - this.startTime.getTime();
+                     }, 1000);
+                 },
+
+                 async startTracking() {
+                     this.isLoading = true;
+                     this.message = 'Starting time tracking...';
+
+                     try {
+                         const response = await fetch('/time/start', { method: 'POST' });
+                         if (response.ok) {
+                             const timeEntry = await response.json();
+                             this.startTime = new Date(timeEntry.startTime);
+                             this.startTimer();
+                             this.message = 'Time tracking started!';
+                         } else {
+                             throw new Error('Failed to start time tracking');
+                         }
+                     } catch (error) {
+                         console.error('Error starting time tracking:', error);
+                         this.message = 'Error starting time tracking';
+                     } finally {
+                         this.isLoading = false;
+                     }
+                 },
+
+                 async stopTracking() {
+                     this.isLoading = true;
+                     this.message = 'Stopping time tracking...';
+
+                     try {
+                         const response = await fetch('/time/stop', { method: 'POST' });
+                         if (response.ok) {
+                             clearInterval(this.timerInterval);
+                             this.isTracking = false;
+                             this.message = 'Time tracking stopped!';
+                         } else {
+                             throw new Error('Failed to stop time tracking');
+                         }
+                     } catch (error) {
+                         console.error('Error stopping time tracking:', error);
+                         this.message = 'Error stopping time tracking';
+                     } finally {
+                         this.isLoading = false;
+                     }
+                 }
+             }"
+             x-init="init()">
+            
+            <div class="timer-display">
+                <template x-if="!isTracking">
+                    <div class="start-prompt">
+                        <p class="cyber-subtitle">Ready to start tracking?</p>
+                        <button class="btn" 
+                                @click="startTracking"
+                                :disabled="isLoading">
+                            Start Tracking
+                        </button>
+                    </div>
+                </template>
+
+                <template x-if="isTracking">
+                    <div class="active-timer">
+                        <p class="timer" x-text="formatTime(elapsedTime)"></p>
+                        <div class="timer-controls">
+                            <button class="btn stop-btn" 
+                                    @click="stopTracking"
+                                    :disabled="isLoading">
+                                Stop Tracking
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="timer-status" x-show="message">
+                <p x-text="message"></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

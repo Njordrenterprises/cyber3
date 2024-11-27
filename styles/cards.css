@@ -141,3 +141,119 @@
     font-size: 1.2rem;
     line-height: 1.6;
 }
+
+/* Time tracking card */
+.time-card {
+  max-width: 500px;
+  margin: 0 auto;
+  background: rgba(17, 25, 40, 0.95);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 255, 157, 0.1);
+}
+
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.timer {
+  font-family: 'Orbitron', monospace;
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #00ff9d;
+  text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+  letter-spacing: 2px;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.stop-btn {
+  background: linear-gradient(45deg, #ff0055, #ff4081);
+}
+
+.stop-btn:hover {
+  background: linear-gradient(45deg, #ff0055, #ff6b9d);
+  box-shadow: 0 5px 15px rgba(255, 0, 85, 0.4);
+}
+
+.timer-status {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 255, 157, 0.1);
+  color: #00ff9d;
+  text-align: center;
+}
+
+/* Add to existing card styles */
+
+/* Dashboard container */
+.dashboard-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Dashboard card */
+.dashboard-card {
+  background: rgba(17, 25, 40, 0.95);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 255, 157, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 48px 0 rgba(0, 255, 157, 0.2);
+}
+
+.dashboard-card h2 {
+  color: #00ff9d;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  font-family: 'Orbitron', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.dashboard-card p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: auto;
+  justify-content: center;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .dashboard-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

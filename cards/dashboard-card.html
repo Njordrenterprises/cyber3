@@ -1,10 +1,73 @@
-<div class="card dashboard-card">
-    <h2>Welcome to Your Workspace!</h2>
-    <p>You've successfully authenticated. Time to start tracking!</p>
-    <div class="dashboard-actions">
-        <button class="btn" hx-get="/cards/new-time-entry" hx-swap="outerHTML">
-            Start Tracking
-        </button>
-        <a href="/auth/logout" class="btn">Sign Out</a>
+<div class="dashboard-container">
+    <!-- Time Tracking Card -->
+    <div class="card dashboard-card">
+        <h2>Time Tracking</h2>
+        <p>Track your time with precision and get detailed insights into your productivity.</p>
+        <div class="dashboard-actions">
+            <a href="/time" 
+               class="btn"
+               hx-boost="true"
+               hx-push-url="true"
+               hx-target="body"
+               hx-swap="outerHTML">
+                Start Tracking
+            </a>
+        </div>
+    </div>
+
+    <!-- Team Card -->
+    <div class="card dashboard-card">
+        <h2>Team Management</h2>
+        <p>Collaborate with your team, manage permissions, and track group productivity.</p>
+        <div class="dashboard-actions">
+            <a href="/team" class="btn">
+                Manage Team
+            </a>
+        </div>
+    </div>
+
+    <!-- Projects Card -->
+    <div class="card dashboard-card">
+        <h2>Projects</h2>
+        <p>Organize your work into projects, set budgets, and monitor progress.</p>
+        <div class="dashboard-actions">
+            <a href="/projects" class="btn">
+                View Projects
+            </a>
+        </div>
+    </div>
+
+    <!-- AI Insights Card -->
+    <div class="card dashboard-card">
+        <h2>AI Insights</h2>
+        <p>Get intelligent recommendations and productivity analysis powered by AI.</p>
+        <div class="dashboard-actions">
+            <a href="/ai" class="btn">
+                View Insights
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card dashboard-card">
+        <h2>Summary</h2>
+        <p>View comprehensive reports, analytics, and billing information.</p>
+        <div class="dashboard-actions">
+            <a href="/summary" class="btn">
+                View Summary
+            </a>
+        </div>
+    </div>
+
+    <!-- Account Card -->
+    <div class="card dashboard-card">
+        <h2>Account</h2>
+        <p>Manage your profile, preferences, and security settings.</p>
+        <div class="dashboard-actions">
+            <a href="/account" class="btn">
+                Manage Account
+            </a>
+            <a href="/auth/logout" class="btn">Sign Out</a>
+        </div>
     </div>
 </div> 
