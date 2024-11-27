@@ -114,20 +114,23 @@
     </script>
 
     <div class="main-container">
-        <!-- Install Button -->
-        <div x-data="installPWA" 
-             x-show="showInstall" 
-             class="install-prompt"
-             x-transition>
-            <button @click="installApp" 
-                    class="btn install-btn">
-                Install App
-            </button>
-        </div>
-
         <div class="header-card" x-data="headerCard">
             <h1 class="cyber-title" data-text="CYBER CLOCK">CYBER CLOCK</h1>
             <p class="cyber-subtitle">FUTURE PROOF TIME TRACKING</p>
+        </div>
+
+        <!-- Install Card -->
+        <div class="card install-card" 
+             x-data="installPWA"
+             x-show="showInstall">
+            <h2 class="cyber-title-small">Install CYBER CLOCK</h2>
+            <p class="install-description">Get quick access to your time tracking with our installable app.</p>
+            <div class="install-actions">
+                <button @click="installApp" 
+                        class="btn install-btn">
+                    Install App
+                </button>
+            </div>
         </div>
 
         <!-- Login section -->

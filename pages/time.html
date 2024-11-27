@@ -222,6 +222,9 @@
                  isLoading: false,
                  message: '',
                  description: '',
+                 showTimerModal: false,
+                 pendingProject: null,
+                 pendingDescription: '',
 
                  init() {
                      this.checkActiveTimeEntries();
@@ -278,40 +281,53 @@
                          return;
                      }
 
-                     // Check if there's already an active timer for any project
+                     // Check if there's already an active timer
                      const activeProjects = Object.entries(this.activeTimers);
                      if (activeProjects.length > 0) {
-                         const projectNames = await this.getProjectNames(activeProjects.map(([id]) => id));
-                         const confirmStart = await new Promise(resolve => {
-                             const projectList = projectNames.join(', ');
-                             resolve(confirm(`You have active timers for: ${projectList}\nDo you want to start another timer?`));
-                         });
-                         if (!confirmStart) return;
+                         this.pendingProject = $data.selectedProjectId;
+                         this.pendingDescription = this.description;
+                         this.showTimerModal = true;
+                         return;
                      }
 
+                     await this.startNewTimer($data.selectedProjectId, this.description);
+                 },
+
+                 async startNewTimer(projectId, description, keepOthers = true) {
                      this.isLoading = true;
                      this.message = 'Starting time tracking...';
 
                      try {
+                         // If not keeping others, stop all active timers
+                         if (!keepOthers) {
+                             const stopPromises = Object.keys(this.activeTimers).map(pid => 
+                                 this.stopTracking(pid, false)
+                             );
+                             await Promise.all(stopPromises);
+                         }
+
                          const response = await fetch('/time/start', {
                              method: 'POST',
                              headers: { 'Content-Type': 'application/json' },
                              body: JSON.stringify({
-                                 projectId: $data.selectedProjectId,
-                                 description: this.description
+                                 projectId,
+                                 description
                              })
                          });
                          if (response.ok) {
                              const timeEntry = await response.json();
-                             this.activeTimers[$data.selectedProjectId] = {
+                             this.activeTimers[projectId] = {
                                  startTime: new Date(timeEntry.startTime),
-                                 description: this.description,
+                                 description: description,
                                  elapsedTime: 0,
                                  timerInterval: null
                              };
-                             this.startTimer($data.selectedProjectId);
+                             this.startTimer(projectId);
                              this.description = '';
                              this.message = 'Time tracking started!';
+                             this.showTimerModal = false;
+                             this.pendingProject = null;
+                             this.pendingDescription = '';
                          } else {
                              throw new Error('Failed to start time tracking');
                          }
@@ -323,24 +339,10 @@
                      }
                  },
 
-                 async getProjectNames(projectIds) {
-                     try {
-                         const response = await fetch('/projects/list');
-                         if (response.ok) {
-                             const projects = await response.json();
-                             return projectIds.map(id => {
-                                 const project = projects.find(p => p.id === id);
-                                 return project ? project.name : 'Unknown Project';
-                             });
-                         }
-                     } catch (error) {
-                         console.error('Error getting project names:', error);
-                         return projectIds.map(() => 'Unknown Project');
+                 async stopTracking(projectId, showMessage = true) {
+                     if (showMessage) {
+                         this.isLoading = true;
                      }
-                 },
-
-                 async stopTracking(projectId) {
-                     this.isLoading = true;
                      try {
                          const response = await fetch('/time/stop', { 
                              method: 'POST',
@@ -356,67 +358,87 @@
                                  clearInterval(timer.timerInterval);
                              }
                              delete this.activeTimers[projectId];
-                             this.message = 'Time tracking stopped!';
-                             
+                             if (showMessage) {
+                                 this.message = 'Time tracking stopped!';
+                             }
                              document.dispatchEvent(new CustomEvent('time-entry-updated'));
                          } else {
                              throw new Error(data.error || 'Failed to stop time tracking');
                          }
                      } catch (error) {
                          console.error('Error stopping time tracking:', error);
-                         this.message = error instanceof Error ? error.message : 'Error stopping time tracking';
+                         if (showMessage) {
+                             this.message = error instanceof Error ? error.message : 'Error stopping time tracking';
+                         }
                      } finally {
-                         this.isLoading = false;
+                         if (showMessage) {
+                             this.isLoading = false;
+                         }
                      }
                  }
              }">
             
             <div class="timer-display">
-                <template x-if="Object.keys(activeTimers).length === 0">
-                    <div class="start-prompt">
-                        <p class="cyber-subtitle">What are you working on?</p>
-                        <textarea class="cyber-input description-input"
-                                  x-model="description"
-                                  placeholder="Enter task description..."
-                                  :disabled="isLoading"></textarea>
-                        <button class="btn" 
-                                @click="startTracking"
-                                :disabled="isLoading || !description.trim()">
-                            Start Tracking
-                        </button>
-                    </div>
-                </template>
+                <!-- Timer Input -->
+                <div class="timer-input">
+                    <p class="cyber-subtitle">What are you working on?</p>
+                    <textarea class="cyber-input description-input"
+                              x-model="description"
+                              placeholder="Enter task description..."
+                              :disabled="isLoading"></textarea>
+                    <button class="btn" 
+                            @click="startTracking"
+                            :disabled="isLoading || !description.trim()">
+                        Start Tracking
+                    </button>
+                </div>
 
-                <template x-if="Object.keys(activeTimers).length > 0">
-                    <div class="active-timers">
-                        <template x-for="[projectId, timer] in Object.entries(activeTimers)" :key="projectId">
-                            <div class="active-timer">
-                                <p class="timer" x-text="formatTime(timer.elapsedTime)"></p>
-                                <p class="current-task" x-text="timer.description"></p>
-                                <div class="timer-controls">
-                                    <button class="btn stop-btn" 
-                                            @click="stopTracking(projectId)"
-                                            :disabled="isLoading">
-                                        Stop Tracking
-                                    </button>
-                                </div>
+                <!-- Active Timers -->
+                <div class="active-timers" x-show="Object.keys(activeTimers).length > 0">
+                    <template x-for="[projectId, timer] in Object.entries(activeTimers)" :key="projectId">
+                        <div class="active-timer">
+                            <p class="timer" x-text="formatTime(timer.elapsedTime)"></p>
+                            <p class="current-task" x-text="timer.description"></p>
+                            <div class="timer-controls">
+                                <button class="btn stop-btn" 
+                                        @click="stopTracking(projectId)"
+                                        :disabled="isLoading">
+                                    Stop Tracking
+                                </button>
                             </div>
-                        </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
 
-                        <div class="start-new-timer" x-show="!isLoading">
-                            <textarea class="cyber-input description-input"
-                                      x-model="description"
-                                      placeholder="Start another timer..."
-                                      :disabled="isLoading"></textarea>
+            <!-- Timer Confirmation Modal -->
+            <template x-if="showTimerModal">
+                <div class="modal-wrapper" @mousedown.self="showTimerModal = false">
+                    <div class="modal-content" @click.stop>
+                        <h3 class="modal-title">Start New Timer</h3>
+                        <div class="modal-body">
+                            <p>You have active timers running. What would you like to do?</p>
+                        </div>
+                        <div class="modal-actions">
                             <button class="btn" 
-                                    @click="startTracking"
-                                    :disabled="isLoading || !description.trim()">
-                                Start Another Timer
+                                    @click="startNewTimer(pendingProject, pendingDescription, true)"
+                                    :disabled="isLoading">
+                                Keep Others Running
+                            </button>
+                            <button class="btn" 
+                                    @click="startNewTimer(pendingProject, pendingDescription, false)"
+                                    :disabled="isLoading">
+                                Stop Others & Start New
+                            </button>
+                            <button class="btn cancel-btn" 
+                                    @click="showTimerModal = false"
+                                    :disabled="isLoading">
+                                Cancel
                             </button>
                         </div>
                     </div>
-                </template>
-            </div>
+                </div>
+            </template>
 
             <div class="timer-status" x-show="message">
                 <p x-text="message"></p>

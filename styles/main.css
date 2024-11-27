@@ -340,41 +340,61 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
   background: var(--cyber-bg);
   border: 2px solid var(--cyber-accent);
   border-radius: 4px;
-  padding: 1.5rem;
+  padding: 2rem;
   width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 255, 157, 0.2);
 }
 
 .modal-title {
-  font-size: 1.25rem;
-  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
   color: var(--cyber-highlight);
   text-align: center;
+  text-transform: uppercase;
 }
 
 .modal-body {
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.5;
 }
 
 .modal-actions {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .modal-actions .btn {
-  flex: 1;
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+}
+
+@media (min-width: 640px) {
+  .modal-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .modal-actions .btn {
+    flex: 1;
+    max-width: 200px;
+  }
 }
 
 .time-selectors {
@@ -796,4 +816,75 @@ body {
     .active-timer .current-task {
         font-size: 0.9rem;
     }
+}
+
+/* Install Card Styles */
+.install-card {
+    margin-bottom: 2rem;
+    text-align: center;
+    background: linear-gradient(45deg, rgba(37, 99, 235, 0.1), rgba(0, 255, 157, 0.1));
+    border: 2px solid var(--cyber-accent);
+    max-width: 600px;
+    width: 100%;
+}
+
+.install-description {
+    margin: 1rem 0;
+    color: var(--cyber-text);
+    font-size: 1.1rem;
+}
+
+.install-actions {
+    margin-top: 1.5rem;
+}
+
+.install-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    background: var(--cyber-accent);
+    color: var(--cyber-background);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.install-btn:hover {
+    background: var(--cyber-background);
+    color: var(--cyber-accent);
+    border: 2px solid var(--cyber-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 255, 157, 0.2);
+}
+
+@media (max-width: 768px) {
+    .install-card {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+
+    .install-description {
+        font-size: 1rem;
+    }
+
+    .install-btn {
+        width: 100%;
+        padding: 1rem;
+    }
+}
+
+/* Timer Input Styles */
+.timer-input {
+    padding: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--cyber-accent);
+    margin-bottom: 1.5rem;
+}
+
+.timer-input .description-input {
+    margin: 1rem 0;
+    width: 100%;
+    max-width: 500px;
+}
+
+.timer-input .btn {
+    min-width: 200px;
 }
