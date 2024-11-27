@@ -123,10 +123,6 @@ export class UserKV {
     const project = await this.getProject(projectId);
     if (!project) throw new Error('Project not found');
 
-    // Check for active time entry
-    const activeEntry = await this.getActiveTimeEntry();
-    if (activeEntry) throw new Error('Active time entry exists');
-
     const timeEntry: TimeEntry = {
       id: crypto.randomUUID(),
       userId: this.userId,
@@ -139,16 +135,16 @@ export class UserKV {
 
     await this.kv.atomic()
       .set(['users', this.userId, 'time-entries', timeEntry.id], timeEntry)
-      .set(['users', this.userId, 'activeTimeEntry'], timeEntry)
+      .set(['users', this.userId, 'activeTimeEntries', projectId], timeEntry)
       .commit();
 
     return timeEntry;
   }
 
-  async stopTimeEntry(): Promise<TimeEntry> {
-    const activeEntry = await this.getActiveTimeEntry();
+  async stopTimeEntry(projectId: string): Promise<TimeEntry> {
+    const activeEntry = await this.getActiveTimeEntry(projectId);
     if (!activeEntry) {
-      throw new Error('No active time entry found');
+      throw new Error('No active time entry found for this project');
     }
 
     const stoppedEntry: TimeEntry = {
@@ -156,18 +152,36 @@ export class UserKV {
       endTime: new Date()
     };
 
-    // Save the completed entry
+    // Save the completed entry and remove from active entries
     await this.kv.atomic()
       .set(['users', this.userId, 'time-entries', activeEntry.id], stoppedEntry)
-      .delete(['users', this.userId, 'activeTimeEntry'])
+      .delete(['users', this.userId, 'activeTimeEntries', projectId])
       .commit();
 
     return stoppedEntry;
   }
 
-  async getActiveTimeEntry(): Promise<TimeEntry | null> {
-    const entry = await this.kv.get(['users', this.userId, 'activeTimeEntry']);
-    return entry.value as TimeEntry | null;
+  async getActiveTimeEntry(projectId?: string): Promise<TimeEntry | null> {
+    if (projectId) {
+      const entry = await this.kv.get(['users', this.userId, 'activeTimeEntries', projectId]);
+      return entry.value as TimeEntry | null;
+    } else {
+      const entries: TimeEntry[] = [];
+      const iter = this.kv.list<TimeEntry>({ prefix: ['users', this.userId, 'activeTimeEntries'] });
+      for await (const { value } of iter) {
+        entries.push(value);
+      }
+      return entries.length > 0 ? entries[0] : null;
+    }
+  }
+
+  async getActiveTimeEntries(): Promise<TimeEntry[]> {
+    const entries: TimeEntry[] = [];
+    const iter = this.kv.list<TimeEntry>({ prefix: ['users', this.userId, 'activeTimeEntries'] });
+    for await (const { value } of iter) {
+      entries.push(value);
+    }
+    return entries;
   }
 
   async getTimeEntries(options: {

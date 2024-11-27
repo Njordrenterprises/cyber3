@@ -175,13 +175,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const userKv = new UserKV(kv, session.userId);
     
     try {
-      const activeEntry = await userKv.getActiveTimeEntry();
-      return new Response(JSON.stringify(activeEntry), {
+      const activeEntries = await userKv.getActiveTimeEntries();
+      return new Response(JSON.stringify(activeEntries), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
-    } catch (_error) {
-      return new Response(JSON.stringify({ error: 'Failed to get active time entry' }), {
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Failed to get active time entries' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -323,15 +323,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const userKv = new UserKV(kv, session.userId);
     
     try {
-      const activeEntry = await userKv.getActiveTimeEntry();
-      if (!activeEntry) {
-        return new Response(JSON.stringify({ error: 'No active time entry found' }), {
+      const body = await req.json();
+      const { projectId } = body;
+
+      if (!projectId) {
+        return new Response(JSON.stringify({ error: 'Project ID is required' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' }
         });
       }
 
-      const timeEntry = await userKv.stopTimeEntry();
+      const activeEntry = await userKv.getActiveTimeEntry(projectId);
+      if (!activeEntry) {
+        return new Response(JSON.stringify({ error: 'No active time entry found for this project' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const timeEntry = await userKv.stopTimeEntry(projectId);
       return new Response(JSON.stringify(timeEntry), {
         headers: { 'Content-Type': 'application/json' }
       });
