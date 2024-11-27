@@ -5,17 +5,105 @@
   border: 1px solid rgba(255, 255, 255, 0.125);
   padding: 2rem;
   margin: 0 auto 2rem auto;
-  max-width: 60%;
+  max-width: 99%;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   text-align: center;
 }
 
-.header-card h1 {
+/* Cyberpunk title styling */
+.cyber-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: linear-gradient(
+    45deg,
+    #00ff9d,
+    #00b8ff,
+    #ff00ff,
+    #00ff9d
+  );
+  background-size: 300%;
+  background-position: left;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 
+    0 0 20px rgba(0, 255, 157, 0.5),
+    0 0 40px rgba(0, 255, 157, 0.2);
+  animation: cyber-glow 8s infinite alternate;
+  position: relative;
+  letter-spacing: 2px;
   margin-bottom: 0.5rem;
-  font-size: 2.5rem;
 }
 
-.header-card p {
+.cyber-title::before {
+  content: attr(data-text);
+  position: absolute;
+  left: -2px;
+  text-shadow: 2px 0 #00ff9d;
+  top: 0;
+  color: transparent;
+  background: none;
+  overflow: hidden;
+  animation: cyber-glitch 5s infinite linear alternate-reverse;
+  width: 100%;
+  opacity: 0.5;
+}
+
+.cyber-title::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 2px;
+  text-shadow: -2px 0 #ff00ff;
+  top: 0;
+  color: transparent;
+  background: none;
+  overflow: hidden;
+  animation: cyber-glitch 7s infinite linear alternate-reverse;
+  width: 100%;
+  opacity: 0.5;
+}
+
+/* Subtitle styling */
+.cyber-subtitle {
+  color: #00ff9d;
+  font-family: 'Rajdhani', sans-serif;
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  margin-top: 1rem;
+  text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+  opacity: 0.9;
+}
+
+@keyframes cyber-glow {
+  0% {
+    background-position: left;
+  }
+  100% {
+    background-position: right;
+  }
+}
+
+@keyframes cyber-glitch {
+  0% {
+    clip-path: inset(5% 0 85% 0);
+  }
+  20% {
+    clip-path: inset(15% 0 70% 0);
+  }
+  40% {
+    clip-path: inset(25% 0 55% 0);
+  }
+  60% {
+    clip-path: inset(45% 0 40% 0);
+  }
+  80% {
+    clip-path: inset(60% 0 25% 0);
+  }
+  100% {
+    clip-path: inset(75% 0 15% 0);
+  }
 }

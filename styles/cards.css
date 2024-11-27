@@ -1,142 +1,143 @@
 /* Base card styles */
 .card {
-  background: rgba(17, 25, 40, 0.75);
-  border-radius: 12px;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.125);
-  padding: 1.5rem;
-  flex: 1 1 100%;
-  min-width: 250px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  transition: transform 0.2s ease-in-out;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+    background: rgba(17, 25, 40, 0.75);
+    border-radius: 12px;
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.125);
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
 }
 
-/* Card variations */
+/* Login card styles */
 .login-card {
-  max-width: 400px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.header-card {
-  background: rgba(17, 25, 40, 0.95);
-  width: 100%;
-  margin-bottom: 2rem;
-}
-
-/* Card content styles */
-.card h2 {
-  margin-bottom: 0.5rem;
-}
-
-.card p {
-  margin-bottom: 1.5rem;
-}
-
-/* Card interactions */
-.card:hover {
-  transform: translateY(-5px);
-}
-
-/* Form styles */
-.login-form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.login-form .btn {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 /* Content container */
 #content {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem;
 }
 
-/* Responsive breakpoints */
-@media (min-width: 640px) {
-  .card {
-    flex: 1 1 calc(50% - 1rem);
-  }
+/* Form styles */
+.login-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-@media (min-width: 768px) {
-  .card {
-    flex: 1 1 calc(33.333% - 1rem);
-  }
+.login-form .btn {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-@media (min-width: 1024px) {
-  .card {
-    flex: 1 1 calc(25% - 1rem);
-  }
-}
-
-/* Add to existing card styles */
-
+/* Feature cards */
 .feature-cards-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  justify-content: center;
-  margin-bottom: 3rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    box-sizing: border-box;
 }
 
 .feature-card {
-  background: rgba(17, 25, 40, 0.85);
-  max-width: 350px;
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-5px);
-  background: rgba(17, 25, 40, 0.95);
+    background: rgba(17, 25, 40, 0.85);
+    width: 100%;
+    max-width: 350px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease-out;
+    margin: 0;
 }
 
 .feature-card h2 {
-  color: #00ff9d;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+    color: #00ff9d;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .feature-card p {
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
 }
 
-.feature-card .btn {
-  background: linear-gradient(45deg, #00ff9d, #00b8ff);
-  opacity: 0.9;
+.feature-card.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-.feature-card .btn:hover {
-  opacity: 1;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 157, 0.4);
+/* Add transition delays for sequential animation */
+.feature-card:nth-child(1) { transition-delay: 0.1s; }
+.feature-card:nth-child(2) { transition-delay: 0.2s; }
+.feature-card:nth-child(3) { transition-delay: 0.3s; }
+.feature-card:nth-child(4) { transition-delay: 0.4s; }
+.feature-card:nth-child(5) { transition-delay: 0.5s; }
+.feature-card:nth-child(6) { transition-delay: 0.6s; }
+.feature-card:nth-child(7) { transition-delay: 0.7s; }
+.feature-card:nth-child(8) { transition-delay: 0.8s; }
+.feature-card:nth-child(9) { transition-delay: 0.9s; }
+
+/* Responsive breakpoints for feature cards */
+@media (min-width: 768px) {
+    .feature-cards-container {
+        flex-direction: row;
+        padding: 2rem 1rem;
+    }
+    
+    .feature-card {
+        flex: 0 1 calc(50% - 2rem);
+        min-width: 300px;
+    }
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .feature-cards-container {
+@media (min-width: 1200px) {
+    .feature-card {
+        flex: 0 1 calc(33.333% - 2rem);
+    }
+}
+
+/* Add to existing card styles */
+.dashboard-card {
+    max-width: 600px;
+    margin: 0 auto;
+    background: rgba(17, 25, 40, 0.95);
+    border: 1px solid rgba(0, 255, 157, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 255, 157, 0.1);
+}
+
+.dashboard-actions {
+    display: flex;
     gap: 1rem;
-  }
-  
-  .feature-card {
-    max-width: 100%;
-  }
+    margin-top: 2rem;
+}
+
+.dashboard-card h2 {
+    color: #00ff9d;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.dashboard-card p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2rem;
+    line-height: 1.6;
 }

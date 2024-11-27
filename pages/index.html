@@ -9,18 +9,51 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
+    <!-- Initialize Alpine Data -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('headerCard', () => ({
+                init() {
+                    // Header card initialization
+                }
+            }));
+
+            Alpine.data('loginCard', () => ({
+                isLoggedIn: false,
+                init() {
+                    this.isLoggedIn = document.cookie.includes('session=');
+                }
+            }));
+
+            Alpine.data('featureCard', () => ({
+                init() {
+                    // Wait for HTMX to load the content
+                    document.body.addEventListener('htmx:afterSettle', () => {
+                        const observer = new IntersectionObserver(
+                            (entries) => {
+                                entries.forEach(entry => {
+                                    if (entry.isIntersecting) {
+                                        entry.target.classList.add('visible');
+                                    }
+                                });
+                            },
+                            { threshold: 0.1 }
+                        );
+
+                        // Observe feature cards after they're loaded
+                        document.querySelectorAll('.feature-card').forEach(card => {
+                            observer.observe(card);
+                        });
+                    });
+                }
+            }));
+        });
+    </script>
+
     <div class="main-container">
         <div class="header-card" x-data="headerCard">
-            <h1>CYBER CLOCK</h1>
-            <p>Htmx Time Tracking</p>
-        </div>
-        
-        <!-- Features section for logged-out users -->
-        <div id="features" 
-             x-data="featureCard"
-             hx-get="/cards/feature-cards" 
-             hx-trigger="load">
-            <!-- Feature cards will load here -->
+            <h1 class="cyber-title" data-text="CYBER CLOCK">CYBER CLOCK</h1>
+            <p class="cyber-subtitle">FUTURE PROOF TIME TRACKING</p>
         </div>
 
         <!-- Login section -->
@@ -30,18 +63,14 @@
              hx-trigger="load">
             <!-- Login card will load here -->
         </div>
+
+        <!-- Features section -->
+        <div id="features" 
+             x-data="featureCard"
+             hx-get="/cards/feature-cards" 
+             hx-trigger="load">
+            <!-- Feature cards will load here -->
+        </div>
     </div>
-
-    <!-- Import our functions -->
-    <script type="module">
-        import { loginCard } from '/functions/login-card.ts';
-        import { headerCard } from '/functions/header-card.ts';
-        import { featureCard } from '/functions/feature-card.ts';
-
-        // Make functions available to Alpine
-        window.loginCard = loginCard;
-        window.headerCard = headerCard;
-        window.featureCard = featureCard;
-    </script>
 </body>
 </html> 
