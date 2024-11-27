@@ -11,6 +11,16 @@
 <body>
     <div class="main-container" x-data="{ selectedProjectId: null }">
         <div class="header-card">
+            <div class="header-nav">
+                <a href="/" 
+                   class="btn back-btn"
+                   hx-boost="true"
+                   hx-push-url="true"
+                   hx-target="body"
+                   hx-swap="outerHTML">
+                    ← Dashboard
+                </a>
+            </div>
             <h1 class="cyber-title" data-text="TIME TRACKER">TIME TRACKER</h1>
             <p class="cyber-subtitle">TRACK YOUR CYBER TIME</p>
         </div>

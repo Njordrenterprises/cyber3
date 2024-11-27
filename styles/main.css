@@ -671,3 +671,57 @@ body {
   box-shadow: 0 0 10px var(--cyber-highlight);
   outline: none;
 }
+
+.install-prompt {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    padding: 10px;
+    background: var(--cyber-background);
+    border: 1px solid var(--cyber-accent);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.install-btn {
+    background: var(--cyber-accent);
+    color: var(--cyber-background);
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.install-btn:hover {
+    background: var(--cyber-background);
+    color: var(--cyber-accent);
+    border: 1px solid var(--cyber-accent);
+}
+
+.header-nav {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    background: var(--cyber-background);
+    border: 1px solid var(--cyber-accent);
+    color: var(--cyber-accent);
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: var(--cyber-accent);
+    color: var(--cyber-background);
+    text-decoration: none;
+}

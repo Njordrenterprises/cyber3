@@ -21,8 +21,19 @@
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
-    <!-- Service Worker Registration -->
+    <!-- Service Worker and PWA Installation -->
     <script>
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install button
+            document.dispatchEvent(new CustomEvent('pwa-ready'));
+        });
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
@@ -75,10 +86,45 @@
                     });
                 }
             }));
+
+            Alpine.data('installPWA', () => ({
+                showInstall: false,
+                init() {
+                    // Listen for PWA ready event
+                    document.addEventListener('pwa-ready', () => {
+                        this.showInstall = true;
+                    });
+                },
+                async installApp() {
+                    if (!deferredPrompt) return;
+                    
+                    // Show the install prompt
+                    deferredPrompt.prompt();
+                    
+                    // Wait for the user to respond to the prompt
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to install prompt: ${outcome}`);
+                    
+                    // Clear the deferredPrompt variable
+                    deferredPrompt = null;
+                    this.showInstall = false;
+                }
+            }));
         });
     </script>
 
     <div class="main-container">
+        <!-- Install Button -->
+        <div x-data="installPWA" 
+             x-show="showInstall" 
+             class="install-prompt"
+             x-transition>
+            <button @click="installApp" 
+                    class="btn install-btn">
+                Install App
+            </button>
+        </div>
+
         <div class="header-card" x-data="headerCard">
             <h1 class="cyber-title" data-text="CYBER CLOCK">CYBER CLOCK</h1>
             <p class="cyber-subtitle">FUTURE PROOF TIME TRACKING</p>
