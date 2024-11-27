@@ -1,3 +1,5 @@
+/// <reference lib="deno.unstable" />
+
 import { loadEnvironment } from './app/config/env.ts';
 import { UserKV } from './kv/mod.ts';
 
