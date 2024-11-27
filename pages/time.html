@@ -20,7 +20,9 @@
              x-data="{
                  projects: [],
                  newProjectName: '',
+                 editProjectName: '',
                  showNewProject: false,
+                 showEditProject: false,
                  isLoading: false,
                  message: '',
 
@@ -54,6 +56,47 @@
                      }
                  },
 
+                 startEdit() {
+                     if (!$data.selectedProjectId) {
+                         this.message = 'Please select a project to edit';
+                         return;
+                     }
+                     const project = this.projects.find(p => p.id === $data.selectedProjectId);
+                     if (project) {
+                         this.editProjectName = project.name;
+                         this.showEditProject = true;
+                     }
+                 },
+
+                 async updateProject() {
+                     if (!this.editProjectName.trim() || !$data.selectedProjectId) return;
+                     
+                     this.isLoading = true;
+                     try {
+                         const response = await fetch(`/projects/${$data.selectedProjectId}`, {
+                             method: 'PUT',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ name: this.editProjectName })
+                         });
+                         
+                         if (response.ok) {
+                             const updatedProject = await response.json();
+                             const index = this.projects.findIndex(p => p.id === updatedProject.id);
+                             if (index !== -1) {
+                                 this.projects[index] = updatedProject;
+                             }
+                             this.editProjectName = '';
+                             this.showEditProject = false;
+                             this.message = 'Project updated successfully!';
+                         }
+                     } catch (error) {
+                         console.error('Error updating project:', error);
+                         this.message = 'Error updating project';
+                     } finally {
+                         this.isLoading = false;
+                     }
+                 },
+
                  async createProject() {
                      if (!this.newProjectName.trim()) return;
                      
@@ -84,7 +127,7 @@
             <h2 class="cyber-title-small">Project Selection</h2>
             
             <div class="project-controls">
-                <template x-if="!showNewProject">
+                <template x-if="!showNewProject && !showEditProject">
                     <div class="project-select">
                         <select x-model="$data.selectedProjectId" 
                                 class="cyber-select"
@@ -94,11 +137,18 @@
                                 <option :value="project.id" x-text="project.name"></option>
                             </template>
                         </select>
-                        <button class="btn" 
-                                @click="showNewProject = true"
-                                :disabled="isLoading">
-                            New Project
-                        </button>
+                        <div class="project-actions">
+                            <button class="btn" 
+                                    @click="showNewProject = true"
+                                    :disabled="isLoading">
+                                New Project
+                            </button>
+                            <button class="btn edit-btn" 
+                                    @click="startEdit()"
+                                    :disabled="isLoading || !$data.selectedProjectId">
+                                Edit Project
+                            </button>
+                        </div>
                     </div>
                 </template>
 
@@ -117,6 +167,28 @@
                             </button>
                             <button class="btn cancel-btn" 
                                     @click="showNewProject = false"
+                                    :disabled="isLoading">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="showEditProject">
+                    <div class="project-create">
+                        <input type="text" 
+                               x-model="editProjectName"
+                               class="cyber-input"
+                               placeholder="Project Name"
+                               :disabled="isLoading">
+                        <div class="project-actions">
+                            <button class="btn" 
+                                    @click="updateProject()"
+                                    :disabled="isLoading || !editProjectName.trim()">
+                                Update
+                            </button>
+                            <button class="btn cancel-btn" 
+                                    @click="showEditProject = false"
                                     :disabled="isLoading">
                                 Cancel
                             </button>

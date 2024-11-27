@@ -94,9 +94,26 @@ body {
 
 .project-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.5rem;
   width: 100%;
+}
+
+.project-actions .btn {
+  flex: 1;
+}
+
+.edit-btn {
+  background-color: var(--cyber-accent);
+}
+
+.edit-btn:hover {
+  background-color: var(--cyber-highlight);
+}
+
+.edit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .project-message {
