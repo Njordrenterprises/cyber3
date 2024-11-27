@@ -4,9 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CYBER CLOCK</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#00ff9d">
+    <meta name="description" content="Future Proof Time Tracking">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CYBER CLOCK">
+    
+    <!-- PWA Links -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon.svg">
+    
+    <!-- Styles and Scripts -->
     <link rel="stylesheet" href="/styles/main.css">
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
 </head>
 <body>
     <!-- Initialize Alpine Data -->

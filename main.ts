@@ -448,6 +448,31 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
   }
 
+  // Static file handlers
+  if (url.pathname === '/manifest.json') {
+    return await Deno.readFile('./static/manifest.json')
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': 'application/json' },
+      }));
+  }
+
+  if (url.pathname === '/sw.js') {
+    return await Deno.readFile('./static/sw.js')
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': 'application/javascript' },
+      }));
+  }
+
+  if (url.pathname.startsWith('/icons/')) {
+    const filePath = `./static${url.pathname}`;
+    const contentType = url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+    return await Deno.readFile(filePath)
+      .then(data => new Response(data, {
+        headers: { 'Content-Type': contentType },
+      }))
+      .catch(() => new Response('Not Found', { status: 404 }));
+  }
+
   // Default 404 response
   return new Response('Not Found', { status: 404 });
 });
