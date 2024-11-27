@@ -1,21 +1,28 @@
 export async function loadEnvironment() {
-  try {
-    const envContent = await Deno.readTextFile('./.env');
-    console.log('Loading environment variables...');
-    
-    for (const line of envContent.split('\n')) {
-      const trimmedLine = line.trim();
-      if (trimmedLine && !trimmedLine.startsWith('#')) {
-        const [key, ...valueParts] = trimmedLine.split('=');
-        const value = valueParts.join('=');
-        if (key && value) {
-          Deno.env.set(key.trim(), value);
-          console.log(`Set ${key.trim()} = ${value.substring(0, 5)}...`);
+  const isDev = Deno.env.get('DENO_ENV') === 'development';
+  
+  if (isDev) {
+    try {
+      const envContent = await Deno.readTextFile('./.env');
+      console.log('Loading environment variables from .env file...');
+      
+      for (const line of envContent.split('\n')) {
+        const trimmedLine = line.trim();
+        if (trimmedLine && !trimmedLine.startsWith('#')) {
+          const [key, ...valueParts] = trimmedLine.split('=');
+          const value = valueParts.join('=');
+          if (key && value) {
+            Deno.env.set(key.trim(), value.trim());
+            console.log(`Set ${key.trim()} = ${value.substring(0, 5)}...`);
+          }
         }
       }
+    } catch (error) {
+      console.error('Error loading .env file:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('Error loading .env file:', error);
-    throw error; // Re-throw to handle it in the main application
+  } else {
+    // In production (Deno Deploy), environment variables are set in the dashboard
+    console.log('Running in production mode, using Deno Deploy environment variables');
   }
 } 
