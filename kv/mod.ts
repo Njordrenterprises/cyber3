@@ -74,6 +74,22 @@ export class UserKV {
     return project;
   }
 
+  async updateProject(projectId: string, updates: { name?: string; description?: string }): Promise<Project> {
+    const project = await this.getProject(projectId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    const updatedProject: Project = {
+      ...project,
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    await this.kv.set(['projects', this.userId, projectId], updatedProject);
+    return updatedProject;
+  }
+
   async getProject(projectId: string): Promise<Project | null> {
     const result = await this.kv.get<Project>(['projects', this.userId, projectId]);
     return result.value;
@@ -122,8 +138,8 @@ export class UserKV {
     };
 
     await this.kv.atomic()
-      .set(['time-entries', this.userId, timeEntry.id], timeEntry)
-      .set(['active-time-entry', this.userId], timeEntry)
+      .set(['users', this.userId, 'time-entries', timeEntry.id], timeEntry)
+      .set(['users', this.userId, 'activeTimeEntry'], timeEntry)
       .commit();
 
     return timeEntry;
@@ -131,28 +147,27 @@ export class UserKV {
 
   async stopTimeEntry(): Promise<TimeEntry> {
     const activeEntry = await this.getActiveTimeEntry();
-    if (!activeEntry) throw new Error('No active time entry');
+    if (!activeEntry) {
+      throw new Error('No active time entry found');
+    }
 
-    const endTime = new Date();
-    const duration = endTime.getTime() - activeEntry.startTime.getTime();
-
-    const completedEntry: TimeEntry = {
+    const stoppedEntry: TimeEntry = {
       ...activeEntry,
-      endTime,
-      duration
+      endTime: new Date()
     };
 
+    // Save the completed entry
     await this.kv.atomic()
-      .set(['time-entries', this.userId, activeEntry.id], completedEntry)
-      .delete(['active-time-entry', this.userId])
+      .set(['users', this.userId, 'time-entries', activeEntry.id], stoppedEntry)
+      .delete(['users', this.userId, 'activeTimeEntry'])
       .commit();
 
-    return completedEntry;
+    return stoppedEntry;
   }
 
   async getActiveTimeEntry(): Promise<TimeEntry | null> {
-    const result = await this.kv.get<TimeEntry>(['active-time-entry', this.userId]);
-    return result.value;
+    const entry = await this.kv.get(['users', this.userId, 'activeTimeEntry']);
+    return entry.value as TimeEntry | null;
   }
 
   async getTimeEntries(options: {
@@ -161,7 +176,7 @@ export class UserKV {
     endDate?: Date;
   } = {}): Promise<TimeEntry[]> {
     const entries: TimeEntry[] = [];
-    const iter = this.kv.list<TimeEntry>({ prefix: ['time-entries', this.userId] });
+    const iter = this.kv.list<TimeEntry>({ prefix: ['users', this.userId, 'time-entries'] });
     
     for await (const { value } of iter) {
       let include = true;
@@ -172,10 +187,10 @@ export class UserKV {
       }
 
       // Filter by date range
-      if (options.startDate && value.startTime < options.startDate) {
+      if (options.startDate && new Date(value.startTime) < options.startDate) {
         include = false;
       }
-      if (options.endDate && value.startTime > options.endDate) {
+      if (options.endDate && new Date(value.startTime) > options.endDate) {
         include = false;
       }
 
@@ -185,7 +200,9 @@ export class UserKV {
     }
 
     // Sort by start time, newest first
-    return entries.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    return entries.sort((a, b) => 
+      new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    );
   }
 
   async getProjectSummary(projectId: string, startDate?: Date, endDate?: Date): Promise<{

@@ -162,6 +162,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }));
   }
 
+  if (url.pathname === '/time/active') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const kv = await Deno.openKv();
+    const userKv = new UserKV(kv, session.userId);
+    
+    try {
+      const activeEntry = await userKv.getActiveTimeEntry();
+      return new Response(JSON.stringify(activeEntry), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Failed to get active time entry' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
   // Project routes
   if (url.pathname === '/projects/list') {
     const authResult = await requireAuth(req);
@@ -177,6 +201,40 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify(projects), {
       headers: { 'Content-Type': 'application/json' }
     });
+  }
+
+  if (url.pathname.match(/^\/projects\/[^/]+$/) && req.method === 'PUT') {
+    const authResult = await requireAuth(req);
+    if (authResult.status === 302) {
+      return authResult;
+    }
+    const session = JSON.parse(await authResult.text());
+    
+    const projectId = url.pathname.split('/').pop()!;
+    const body = await req.json();
+    const { name } = body;
+    
+    if (!name?.trim()) {
+      return new Response(JSON.stringify({ error: 'Project name is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const kv = await Deno.openKv();
+    const userKv = new UserKV(kv, session.userId);
+    
+    try {
+      const updatedProject = await userKv.updateProject(projectId, { name });
+      return new Response(JSON.stringify(updatedProject), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Failed to update project' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   }
 
   if (url.pathname === '/projects/create' && req.method === 'POST') {
@@ -237,14 +295,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const userKv = new UserKV(kv, session.userId);
     
     try {
+      const activeEntry = await userKv.getActiveTimeEntry();
+      if (!activeEntry) {
+        return new Response(JSON.stringify({ error: 'No active time entry found' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
       const timeEntry = await userKv.stopTimeEntry();
       return new Response(JSON.stringify(timeEntry), {
         headers: { 'Content-Type': 'application/json' }
       });
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: 400,
+    } catch (error) {
+      console.error('Error stopping time entry:', error);
+      return new Response(JSON.stringify({ error: 'Failed to stop time entry' }), {
+        status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }

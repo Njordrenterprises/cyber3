@@ -223,9 +223,11 @@
                          const response = await fetch('/time/active');
                          if (response.ok) {
                              const timeEntry = await response.json();
-                             this.startTime = new Date(timeEntry.startTime);
-                             this.description = timeEntry.description;
-                             this.startTimer();
+                             if (timeEntry) {
+                                 this.startTime = new Date(timeEntry.startTime);
+                                 this.description = timeEntry.description;
+                                 this.startTimer();
+                             }
                          }
                      } catch (error) {
                          console.error('Error checking active time entry:', error);
@@ -292,21 +294,31 @@
                      this.message = 'Stopping time tracking...';
 
                      try {
-                         const response = await fetch('/time/stop', { method: 'POST' });
+                         const response = await fetch('/time/stop', { 
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' }
+                         });
+                         
+                         const data = await response.json();
+                         
                          if (response.ok) {
-                             clearInterval(this.timerInterval);
+                             if (this.timerInterval !== null) {
+                                 clearInterval(this.timerInterval);
+                             }
                              this.isTracking = false;
                              this.description = '';
+                             this.elapsedTime = 0;
+                             this.startTime = null;
                              this.message = 'Time tracking stopped!';
                              
                              // Dispatch event to refresh summary
                              this.$dispatch('time-entry-updated');
                          } else {
-                             throw new Error('Failed to stop time tracking');
+                             throw new Error(data.error || 'Failed to stop time tracking');
                          }
                      } catch (error) {
                          console.error('Error stopping time tracking:', error);
-                         this.message = 'Error stopping time tracking';
+                         this.message = error instanceof Error ? error.message : 'Error stopping time tracking';
                      } finally {
                          this.isLoading = false;
                      }
@@ -452,13 +464,13 @@
                     <tbody>
                         <template x-for="entry in entries" :key="entry.id">
                             <tr>
-                                <td x-text="formatDate(entry.startTime)"></td>
-                                <td x-text="format12Hour(entry.startTime)"></td>
-                                <td>
+                                <td data-label="Date" x-text="formatDate(entry.startTime)"></td>
+                                <td data-label="Start Time" x-text="format12Hour(entry.startTime)"></td>
+                                <td data-label="End Time">
                                     <span x-text="entry.endTime ? format12Hour(entry.endTime) : 'In Progress'"></span>
                                 </td>
-                                <td x-text="formatDuration(entry.startTime, entry.endTime)"></td>
-                                <td x-text="entry.description"></td>
+                                <td data-label="Duration" x-text="formatDuration(entry.startTime, entry.endTime)"></td>
+                                <td data-label="Description" x-text="entry.description"></td>
                             </tr>
                         </template>
                     </tbody>
