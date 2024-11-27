@@ -580,19 +580,16 @@ body {
 .date-selectors {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-  justify-content: center;
+  margin-top: 1rem;
 }
 
 .date-selectors select {
-  padding: 0.75rem;
-  font-size: 1.25rem;
+  flex: 1;
+  padding: 0.5rem;
   background-color: var(--cyber-bg);
   border: 1px solid var(--cyber-accent);
   color: var(--cyber-text);
   border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .date-selectors select:hover,
@@ -636,4 +633,41 @@ body {
   .simple-date {
     justify-content: flex-end;
   }
+}
+
+.non-interactive {
+  pointer-events: none;
+  cursor: default;
+}
+
+.non-interactive:hover {
+  background-color: transparent !important;
+}
+
+.date-display {
+  font-size: 1.5rem;
+  text-align: center;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: var(--cyber-highlight);
+  border: 1px solid var(--cyber-accent);
+  border-radius: 4px;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.date-input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.25rem;
+  background-color: var(--cyber-bg);
+  border: 1px solid var(--cyber-accent);
+  color: var(--cyber-text);
+  border-radius: 4px;
+}
+
+.date-input:hover,
+.date-input:focus {
+  border-color: var(--cyber-highlight);
+  box-shadow: 0 0 10px var(--cyber-highlight);
+  outline: none;
 }
